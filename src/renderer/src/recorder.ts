@@ -273,8 +273,20 @@ export async function startRecording(mode: RecordingMode): Promise<RecorderHandl
       recorder.stop()
     })
     // MediaRecorder writes no duration header; patch it in so playback and
-    // seeking work correctly regardless of file length
-    const blob = await fixWebmDuration(raw, durationMs, { logger: false }).catch(() => raw)
+    // seeking work correctly regardless of file length. Guard the module's
+    // export shape and surface failures instead of swallowing them.
+    let blob = raw
+    try {
+      const mod = fixWebmDuration as unknown as { default?: typeof fixWebmDuration }
+      const fix = typeof mod === 'function' ? mod : mod.default
+      if (typeof fix === 'function') {
+        blob = await fix(raw, durationMs, { logger: false })
+      } else {
+        console.warn('fix-webm-duration export not callable; saving unpatched webm')
+      }
+    } catch (err) {
+      console.warn('webm duration patch failed; saving unpatched webm', err)
+    }
     await teardown()
     // flush remaining downsampled samples after the pump has fully drained
     if (outBuf.length > 0) {

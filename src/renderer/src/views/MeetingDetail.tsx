@@ -72,26 +72,17 @@ function AudioPlayer({
     }
   }, [control])
 
-  // Older recordings lack a duration header (MediaRecorder quirk); force a
-  // scan and keep listening until Chromium reports a real duration, however
-  // long the file takes to scan.
+  // Recordings may lack a duration header (MediaRecorder quirk), and probing
+  // the file end for it stalls playback on long files. The app already knows
+  // the exact duration from the recording session, so fallbackMs is
+  // authoritative; only trust the media element when it reports a real,
+  // larger value.
   function onLoadedMetadata(): void {
     const a = audioRef.current
     if (!a) return
-    if (isFinite(a.duration) && a.duration > 0) {
+    if (isFinite(a.duration) && a.duration > fallbackMs / 1000) {
       setDuration(a.duration)
-      return
     }
-    const onDur = (): void => {
-      if (isFinite(a.duration) && a.duration > 0) {
-        a.removeEventListener('durationchange', onDur)
-        setDuration(a.duration)
-        a.currentTime = 0
-        setTime(0)
-      }
-    }
-    a.addEventListener('durationchange', onDur)
-    a.currentTime = 1e10
   }
 
   function toggle(): void {
