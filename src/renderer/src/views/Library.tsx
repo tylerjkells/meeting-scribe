@@ -39,14 +39,30 @@ export function LibraryView({
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
+  // deep search: matches inside transcripts and summaries, via the main process
+  const [deepMatches, setDeepMatches] = useState<Map<string, string>>(new Map())
+  useEffect(() => {
+    const q = query.trim()
+    if (q.length < 3) {
+      setDeepMatches(new Map())
+      return
+    }
+    const t = setTimeout(() => {
+      window.scribe.meetings.search(q).then((hits) => {
+        setDeepMatches(new Map(hits.map((h) => [h.id, h.snippet])))
+      })
+    }, 250)
+    return () => clearTimeout(t)
+  }, [query])
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return meetings
     return meetings.filter((m) => {
       const haystack = `${m.title} ${m.tldr ?? ''} ${formatWhen(m.createdAt)} ${m.createdAt.slice(0, 10)}`.toLowerCase()
-      return q.split(/\s+/).every((word) => haystack.includes(word))
+      return q.split(/\s+/).every((word) => haystack.includes(word)) || deepMatches.has(m.id)
     })
-  }, [meetings, query])
+  }, [meetings, query, deepMatches])
 
   if (meetings.length === 0) {
     return (
@@ -136,7 +152,9 @@ export function LibraryView({
                 <span>{formatWhen(m.createdAt)}</span>
               </span>
               <span className="meeting-row-sub">
-                {m.tldr ?? (m.stage === 'error' ? (m.error ?? 'Processing failed') : '')}
+                {(query ? deepMatches.get(m.id) : undefined) ??
+                  m.tldr ??
+                  (m.stage === 'error' ? (m.error ?? 'Processing failed') : '')}
               </span>
             </button>
           ))}

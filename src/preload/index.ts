@@ -8,8 +8,21 @@ import type {
   Meeting,
   MeetingListItem,
   RecordingMode,
+  TranscriptSegment,
   WhisperModel
 } from '../shared/types'
+
+export interface LiveUpdate {
+  id: string
+  segments: TranscriptSegment[]
+  transcribedMs: number
+}
+
+export interface StorageStats {
+  count: number
+  totalBytes: number
+  audioBytes: number
+}
 
 const api = {
   settings: {
@@ -40,7 +53,20 @@ const api = {
       durationMs: number,
       energy: EnergySample[] | null
     ): Promise<Meeting> => ipcRenderer.invoke('rec:finish', id, webm, durationMs, energy),
-    cancel: (id: string): Promise<void> => ipcRenderer.invoke('rec:cancel', id)
+    cancel: (id: string): Promise<void> => ipcRenderer.invoke('rec:cancel', id),
+    onLive: (cb: (u: LiveUpdate) => void): (() => void) => {
+      const handler = (_e: unknown, u: LiveUpdate): void => cb(u)
+      ipcRenderer.on('rec:live', handler)
+      return () => ipcRenderer.removeListener('rec:live', handler)
+    }
+  },
+  update: {
+    onReady: (cb: (version: string) => void): (() => void) => {
+      const handler = (_e: unknown, v: string): void => cb(v)
+      ipcRenderer.on('update:ready', handler)
+      return () => ipcRenderer.removeListener('update:ready', handler)
+    },
+    install: (): Promise<void> => ipcRenderer.invoke('update:install')
   },
   meetings: {
     list: (): Promise<MeetingListItem[]> => ipcRenderer.invoke('meetings:list'),
@@ -58,6 +84,11 @@ const api = {
       ipcRenderer.invoke('meetings:setSpeakers', id, names),
     import: (title: string, dateIso: string, text: string): Promise<Meeting> =>
       ipcRenderer.invoke('meetings:import', title, dateIso, text),
+    search: (query: string): Promise<{ id: string; snippet: string }[]> =>
+      ipcRenderer.invoke('meetings:search', query),
+    deleteAudio: (id: string): Promise<Meeting | null> =>
+      ipcRenderer.invoke('meetings:deleteAudio', id),
+    storageStats: (): Promise<StorageStats> => ipcRenderer.invoke('meetings:storageStats'),
     onUpdated: (cb: (m: Meeting) => void): (() => void) => {
       const handler = (_e: unknown, m: Meeting): void => cb(m)
       ipcRenderer.on('meeting:updated', handler)

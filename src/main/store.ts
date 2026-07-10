@@ -1,4 +1,4 @@
-import { app } from 'electron'
+import { app, BrowserWindow } from 'electron'
 import {
   readFileSync,
   writeFileSync,
@@ -6,12 +6,23 @@ import {
   mkdirSync,
   readdirSync,
   rmSync,
+  statSync,
   createWriteStream,
+  createReadStream,
   type WriteStream
 } from 'fs'
 import { join } from 'path'
 import { randomUUID } from 'crypto'
-import type { EnergySample, Meeting, MeetingListItem, RecordingMode } from '../shared/types'
+import { LiveTranscriber } from './live'
+import { engineStatus } from './whisper'
+import { getSettings } from './settings'
+import type {
+  EnergySample,
+  Meeting,
+  MeetingListItem,
+  RecordingMode,
+  TranscriptSegment
+} from '../shared/types'
 
 export function meetingsRoot(): string {
   const dir = join(app.getPath('userData'), 'meetings')
@@ -29,6 +40,15 @@ function metaPath(id: string): string {
 
 export function audioPath(id: string): string {
   return join(meetingDir(id), 'audio.webm')
+}
+
+/** playback audio: webm for normal recordings, wav for recovered ones */
+export function findAudio(id: string): string | null {
+  const webm = join(meetingDir(id), 'audio.webm')
+  if (existsSync(webm)) return webm
+  const wav = join(meetingDir(id), 'audio.wav')
+  if (existsSync(wav)) return wav
+  return null
 }
 
 export function wavPath(id: string): string {
@@ -91,16 +111,35 @@ interface RecSession {
   startedAt: string
   pcmStream: WriteStream
   pcmBytes: number
+  live: LiveTranscriber | null
 }
 
 const sessions = new Map<string, RecSession>()
+
+function broadcastLive(id: string, segments: TranscriptSegment[], transcribedMs: number): void {
+  for (const win of BrowserWindow.getAllWindows()) {
+    win.webContents.send('rec:live', { id, segments, transcribedMs })
+  }
+}
 
 export function beginRecording(mode: RecordingMode): string {
   const now = new Date()
   const id = `${now.toISOString().replace(/[:.]/g, '-')}-${randomUUID().slice(0, 8)}`
   mkdirSync(meetingDir(id), { recursive: true })
   const pcmStream = createWriteStream(join(meetingDir(id), 'raw.pcm'))
-  sessions.set(id, { id, mode, startedAt: now.toISOString(), pcmStream, pcmBytes: 0 })
+
+  // transcribe as we go when the engine is available, so the transcript is
+  // essentially ready the moment the recording stops
+  const settings = getSettings()
+  const engine = engineStatus(settings.whisperModel)
+  const live =
+    engine.binaryReady && engine.modelReady
+      ? new LiveTranscriber(meetingDir(id), settings.whisperModel, (segs, ms) =>
+          broadcastLive(id, segs, ms)
+        )
+      : null
+
+  sessions.set(id, { id, mode, startedAt: now.toISOString(), pcmStream, pcmBytes: 0, live })
   return id
 }
 
@@ -109,6 +148,7 @@ export function appendPcm(id: string, chunk: Buffer): void {
   if (!s) return
   s.pcmStream.write(chunk)
   s.pcmBytes += chunk.length
+  s.live?.feed(chunk)
 }
 
 const SAMPLE_RATE = 16000
@@ -147,21 +187,24 @@ export async function finishRecording(
 
   // raw.pcm -> whisper-input.wav (prepend header, then stream-copy)
   const rawPath = join(meetingDir(id), 'raw.pcm')
-  const wav = createWriteStream(wavPath(id))
-  wav.write(wavHeader(s.pcmBytes))
-  await new Promise<void>((resolve, reject) => {
-    const { createReadStream } = require('fs') as typeof import('fs')
-    const rd = createReadStream(rawPath)
-    rd.on('error', reject)
-    wav.on('error', reject)
-    wav.on('finish', resolve)
-    rd.pipe(wav)
-  })
+  await pcmToWav(rawPath, wavPath(id), s.pcmBytes)
   rmSync(rawPath, { force: true })
 
   writeFileSync(audioPath(id), webm)
   if (energy && energy.length > 0) {
     writeFileSync(energyPath(id), JSON.stringify(energy))
+  }
+
+  // collect the live transcript if it kept up; fall back to whole-file
+  // transcription in the pipeline when it did not
+  let transcript: TranscriptSegment[] | undefined
+  if (s.live) {
+    const result = await s.live.finish()
+    if (result && result.length > 0) {
+      labelSpeakers(id, result)
+      transcript = result
+      rmSync(wavPath(id), { force: true })
+    }
   }
 
   const when = new Date(s.startedAt)
@@ -172,15 +215,108 @@ export async function finishRecording(
     durationMs,
     mode: s.mode,
     stage: 'recorded',
-    hasAudio: true
+    hasAudio: true,
+    transcript
   }
   writeMeeting(meeting)
   return meeting
 }
 
+async function pcmToWav(rawPath: string, dest: string, bytes: number): Promise<void> {
+  const wav = createWriteStream(dest)
+  wav.write(wavHeader(bytes))
+  await new Promise<void>((resolve, reject) => {
+    const rd = createReadStream(rawPath)
+    rd.on('error', reject)
+    wav.on('error', reject)
+    wav.on('finish', resolve)
+    rd.pipe(wav)
+  })
+}
+
+/**
+ * Attribute each transcript segment to "me" (mic) or "them" (system audio)
+ * using the per-source loudness timeline captured while recording.
+ */
+export function labelSpeakers(id: string, segments: TranscriptSegment[]): void {
+  const path = energyPath(id)
+  if (!existsSync(path)) return
+  try {
+    const samples = JSON.parse(readFileSync(path, 'utf-8')) as EnergySample[]
+    for (const seg of segments) {
+      let mic = 0
+      let sys = 0
+      let n = 0
+      for (const smp of samples) {
+        if (smp.t >= seg.from && smp.t <= seg.to) {
+          mic += smp.mic
+          sys += smp.sys
+          n++
+        }
+      }
+      if (n === 0 || mic + sys < 0.01) continue
+      seg.speaker = mic >= sys ? 'me' : 'them'
+    }
+  } catch {
+    // unreadable timeline: ship the transcript unlabeled
+  }
+  rmSync(path, { force: true })
+}
+
+/**
+ * Salvage recordings orphaned by a crash or power loss: the raw PCM streams
+ * to disk while recording, so a meeting folder with raw.pcm but no
+ * meeting.json can still be transcribed.
+ */
+export async function recoverOrphanedRecordings(): Promise<Meeting[]> {
+  const recovered: Meeting[] = []
+  for (const entry of readdirSync(meetingsRoot(), { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue
+    const id = entry.name
+    const dir = meetingDir(id)
+    const rawPath = join(dir, 'raw.pcm')
+    if (existsSync(join(dir, 'meeting.json')) || !existsSync(rawPath)) continue
+    if (sessions.has(id)) continue
+
+    const bytes = statSync(rawPath).size
+    if (bytes < 32000) {
+      // under a second of audio: nothing worth saving
+      rmSync(dir, { recursive: true, force: true })
+      continue
+    }
+
+    // keep the audio playable (wav) and queue it for transcription
+    await pcmToWav(rawPath, join(dir, 'audio.wav'), bytes)
+    await pcmToWav(rawPath, wavPath(id), bytes)
+    rmSync(rawPath, { force: true })
+
+    const createdAt = dateFromId(id) ?? statSync(dir).mtime.toISOString()
+    const when = new Date(createdAt)
+    const meeting: Meeting = {
+      id,
+      title: `Recovered recording · ${when.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}, ${when.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`,
+      createdAt,
+      durationMs: Math.round((bytes / 32000) * 1000),
+      mode: 'in-person',
+      stage: 'recorded',
+      hasAudio: true
+    }
+    writeMeeting(meeting)
+    recovered.push(meeting)
+  }
+  return recovered
+}
+
+function dateFromId(id: string): string | null {
+  const m = id.match(/^(\d{4}-\d{2}-\d{2})T(\d{2})-(\d{2})-(\d{2})-(\d{3})Z/)
+  if (!m) return null
+  return `${m[1]}T${m[2]}:${m[3]}:${m[4]}.${m[5]}Z`
+}
+
 export function cancelRecording(id: string): void {
   const s = sessions.get(id)
   if (s) {
+    s.live?.abort()
     s.pcmStream.destroy()
     sessions.delete(id)
   }

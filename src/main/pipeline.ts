@@ -1,39 +1,10 @@
 import { BrowserWindow } from 'electron'
-import { existsSync, readFileSync, rmSync } from 'fs'
-import { readMeeting, writeMeeting, wavPath, energyPath } from './store'
+import { existsSync, rmSync } from 'fs'
+import { readMeeting, writeMeeting, wavPath, labelSpeakers } from './store'
 import { transcribe } from './whisper'
 import { summarizeTranscript } from './summarize'
 import { getSettings } from './settings'
-import type { EnergySample, Meeting, TranscriptSegment } from '../shared/types'
-
-/**
- * Attribute each transcript segment to "me" (mic) or "them" (system audio)
- * using the per-source loudness timeline captured while recording.
- */
-function labelSpeakers(id: string, segments: TranscriptSegment[]): void {
-  const path = energyPath(id)
-  if (!existsSync(path)) return
-  try {
-    const samples = JSON.parse(readFileSync(path, 'utf-8')) as EnergySample[]
-    for (const seg of segments) {
-      let mic = 0
-      let sys = 0
-      let n = 0
-      for (const s of samples) {
-        if (s.t >= seg.from && s.t <= seg.to) {
-          mic += s.mic
-          sys += s.sys
-          n++
-        }
-      }
-      if (n === 0 || mic + sys < 0.01) continue
-      seg.speaker = mic >= sys ? 'me' : 'them'
-    }
-  } catch {
-    // unreadable timeline: ship the transcript unlabeled
-  }
-  rmSync(path, { force: true })
-}
+import type { Meeting } from '../shared/types'
 
 function broadcast(meeting: Meeting): void {
   for (const win of BrowserWindow.getAllWindows()) {
@@ -58,6 +29,11 @@ export async function processMeeting(id: string): Promise<void> {
     let meeting = readMeeting(id)
     if (!meeting) return
     const settings = getSettings()
+
+    if (meeting.transcript && meeting.transcript.length > 0) {
+      // live transcription already produced the transcript; drop the safety wav
+      rmSync(wavPath(id), { force: true })
+    }
 
     if (!meeting.transcript || meeting.transcript.length === 0) {
       const wav = wavPath(id)

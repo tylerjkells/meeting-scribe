@@ -156,10 +156,28 @@ interface WhisperJsonOutput {
   }[]
 }
 
-export async function transcribe(
+export interface TranscribeOptions {
+  threads?: number
+  /** context from preceding audio to keep decoding coherent across chunks */
+  prompt?: string
+  onProgress?: (percent: number) => void
+}
+
+/** Full-quality default: most of the machine, leaving headroom for the app
+ *  and the user's meeting software. */
+export function defaultThreads(): number {
+  return Math.max(4, Math.min(12, cpus().length - 4))
+}
+
+/** Conservative thread count for transcribing while a meeting is live. */
+export function liveThreads(): number {
+  return Math.max(2, Math.min(6, cpus().length - 8))
+}
+
+export async function transcribeFile(
   wavFile: string,
   model: WhisperModel,
-  onProgress: (percent: number) => void
+  opts: TranscribeOptions = {}
 ): Promise<TranscriptSegment[]> {
   const binary = findBinary()
   if (!binary) throw new Error('Transcription engine is not installed yet')
@@ -167,23 +185,28 @@ export async function transcribe(
   if (!existsSync(mp)) throw new Error(`Speech model ${model} is not downloaded yet`)
 
   const outBase = wavFile.replace(/\.wav$/i, '')
-  // whisper-cli defaults to 4 threads; use most of the machine (leave headroom
-  // so the app and the user's meeting software stay responsive)
-  const threads = Math.max(4, Math.min(12, cpus().length - 4))
+  const args = [
+    '-m', mp,
+    '-f', wavFile,
+    '-oj',
+    '-of', outBase,
+    '-l', 'en',
+    '-t', String(opts.threads ?? defaultThreads())
+  ]
+  if (opts.prompt) args.push('--prompt', opts.prompt)
+  if (opts.onProgress) args.push('--print-progress')
+
   await new Promise<void>((resolve, reject) => {
-    const p = spawn(
-      binary,
-      ['-m', mp, '-f', wavFile, '-oj', '-of', outBase, '-l', 'en', '-t', String(threads), '--print-progress'],
-      { windowsHide: true }
-    )
+    const p = spawn(binary, args, { windowsHide: true })
     let stderr = ''
     p.stderr.on('data', (d: Buffer) => {
       const s = d.toString()
       stderr += s
+      if (!opts.onProgress) return
       const m = s.match(/progress\s*=\s*(\d+)%/g)
       if (m) {
         const last = m[m.length - 1].match(/(\d+)%/)
-        if (last) onProgress(Number(last[1]))
+        if (last) opts.onProgress(Number(last[1]))
       }
     })
     p.on('close', (code) =>
@@ -199,4 +222,12 @@ export async function transcribe(
   return (parsed.transcription ?? [])
     .map((t) => ({ from: t.offsets.from, to: t.offsets.to, text: t.text.trim() }))
     .filter((t) => t.text.length > 0)
+}
+
+export async function transcribe(
+  wavFile: string,
+  model: WhisperModel,
+  onProgress: (percent: number) => void
+): Promise<TranscriptSegment[]> {
+  return transcribeFile(wavFile, model, { onProgress })
 }

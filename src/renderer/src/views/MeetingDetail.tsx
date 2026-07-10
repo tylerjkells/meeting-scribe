@@ -35,12 +35,42 @@ function Collapse({
   )
 }
 
-function AudioPlayer({ src, fallbackMs }: { src: string; fallbackMs: number }): React.JSX.Element {
+export interface PlayerControl {
+  seek: (ms: number, andPlay?: boolean) => void
+}
+
+function AudioPlayer({
+  src,
+  fallbackMs,
+  control,
+  onTimeMs
+}: {
+  src: string
+  fallbackMs: number
+  control?: React.MutableRefObject<PlayerControl | null>
+  onTimeMs?: (ms: number) => void
+}): React.JSX.Element {
   const audioRef = useRef<HTMLAudioElement>(null)
   const [playing, setPlaying] = useState(false)
   const [time, setTime] = useState(0)
   const [duration, setDuration] = useState(fallbackMs / 1000)
   const [rate, setRate] = useState(1)
+
+  useEffect(() => {
+    if (!control) return
+    control.current = {
+      seek: (ms, andPlay = true) => {
+        const a = audioRef.current
+        if (!a) return
+        a.currentTime = ms / 1000
+        setTime(ms / 1000)
+        if (andPlay) a.play()
+      }
+    }
+    return () => {
+      control.current = null
+    }
+  }, [control])
 
   // MediaRecorder webm files report Infinity duration until forced to scan;
   // this nudge makes Chromium compute the real value.
@@ -87,7 +117,11 @@ function AudioPlayer({ src, fallbackMs }: { src: string; fallbackMs: number }): 
         src={src}
         preload="metadata"
         onLoadedMetadata={onLoadedMetadata}
-        onTimeUpdate={() => setTime(audioRef.current?.currentTime ?? 0)}
+        onTimeUpdate={() => {
+          const t = audioRef.current?.currentTime ?? 0
+          setTime(t)
+          onTimeMs?.(t * 1000)
+        }}
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
         onEnded={() => setPlaying(false)}
@@ -142,6 +176,8 @@ export function MeetingView({
   const [copied, setCopied] = useState(false)
   const [exportedTo, setExportedTo] = useState<string | null>(null)
   const [knownOwners, setKnownOwners] = useState<string[]>([])
+  const [playheadMs, setPlayheadMs] = useState(-1)
+  const playerRef = useRef<PlayerControl | null>(null)
   const titleRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -270,6 +306,19 @@ export function MeetingView({
             <button className="btn" onClick={exportMd}>
               Export Markdown
             </button>
+            {meeting.summary && meeting.transcript && meeting.transcript.length > 0 && (
+              <button
+                className="btn btn-ghost"
+                onClick={() => {
+                  const sure = window.confirm(
+                    'Rewrite the summary from the transcript? Owner assignments and checked-off action items will be reset.'
+                  )
+                  if (sure) window.scribe.meetings.resummarize(meeting.id)
+                }}
+              >
+                Regenerate summary
+              </button>
+            )}
             {exportedTo && (
               <span className="field-note ok" role="status">
                 Saved to {exportedTo}
@@ -280,7 +329,12 @@ export function MeetingView({
       </div>
 
       {meeting.hasAudio && (
-        <AudioPlayer src={`scribe-media://${meeting.id}`} fallbackMs={meeting.durationMs} />
+        <AudioPlayer
+          src={`scribe-media://${meeting.id}`}
+          fallbackMs={meeting.durationMs}
+          control={playerRef}
+          onTimeMs={setPlayheadMs}
+        />
       )}
 
       {working && (
@@ -421,8 +475,15 @@ export function MeetingView({
                     me: meeting.speakerNames?.me ?? 'Me',
                     them: meeting.speakerNames?.them ?? 'Them'
                   }
+                  const active = playheadMs >= seg.from && playheadMs < seg.to
+                  const seekable = meeting.hasAudio
                   return (
-                    <div className="transcript-seg" key={i}>
+                    <div
+                      className={`transcript-seg ${active ? 'active' : ''} ${seekable ? 'seekable' : ''}`}
+                      key={i}
+                      onClick={seekable ? () => playerRef.current?.seek(seg.from) : undefined}
+                      title={seekable ? 'Play from here' : undefined}
+                    >
                       <span className="transcript-time">{formatDuration(seg.from)}</span>
                       <span className="transcript-text">
                         {showChip && (
@@ -443,7 +504,23 @@ export function MeetingView({
         <AskSection meeting={meeting} onAnswer={(m) => setMeeting(m)} />
       )}
 
-      <section className="section">
+      <section className="section danger-row">
+        {meeting.hasAudio && meeting.transcript && meeting.transcript.length > 0 && (
+          <button
+            className="btn btn-ghost"
+            title="Frees disk space; the transcript, summary, and Q&A stay"
+            onClick={async () => {
+              const sure = window.confirm(
+                'Delete the audio recording? The transcript, summary, and Q&A are kept. This frees disk space but the audio cannot be recovered.'
+              )
+              if (!sure) return
+              const updated = await window.scribe.meetings.deleteAudio(meeting.id)
+              if (updated) setMeeting(updated)
+            }}
+          >
+            Delete audio, keep notes
+          </button>
+        )}
         <button className="btn btn-ghost btn-danger" onClick={remove}>
           Delete meeting
         </button>

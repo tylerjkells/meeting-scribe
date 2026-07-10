@@ -12,7 +12,8 @@ import {
 import { writeFileSync } from 'fs'
 import { join } from 'path'
 import { pathToFileURL } from 'url'
-import { existsSync, readFileSync } from 'fs'
+import { existsSync, readFileSync, readdirSync, rmSync, statSync } from 'fs'
+import { autoUpdater } from 'electron-updater'
 import {
   listMeetings,
   readMeeting,
@@ -22,7 +23,10 @@ import {
   appendPcm,
   finishRecording,
   cancelRecording,
-  audioPath
+  findAudio,
+  meetingsRoot,
+  meetingDir,
+  recoverOrphanedRecordings
 } from './store'
 import { getSettings, updateSettings, setApiKey, addPerson } from './settings'
 import { engineStatus, setupEngine } from './whisper'
@@ -89,20 +93,25 @@ app.whenReady().then(() => {
   session.defaultSession.protocol.handle('scribe-media', (request) => {
     const id = decodeURIComponent(new URL(request.url).hostname)
     if (!/^[\w-]+$/.test(id)) return new Response('bad id', { status: 400 })
-    const file = audioPath(id)
-    if (!existsSync(file)) return new Response('not found', { status: 404 })
+    const file = findAudio(id)
+    if (!file) return new Response('not found', { status: 404 })
     return net.fetch(pathToFileURL(file).toString())
   })
 
   registerIpc()
   createWindow()
+  setupAutoUpdate()
 
-  // Resume meetings whose processing was interrupted (app closed mid-transcribe, etc.)
-  for (const m of listMeetings()) {
-    if (m.stage === 'recorded' || m.stage === 'transcribing' || m.stage === 'summarizing') {
-      processMeeting(m.id)
-    }
-  }
+  // Salvage recordings orphaned by a crash, then resume interrupted processing
+  recoverOrphanedRecordings()
+    .catch(() => [])
+    .then(() => {
+      for (const m of listMeetings()) {
+        if (m.stage === 'recorded' || m.stage === 'transcribing' || m.stage === 'summarizing') {
+          processMeeting(m.id)
+        }
+      }
+    })
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
@@ -112,6 +121,22 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   app.quit()
 })
+
+function setupAutoUpdate(): void {
+  if (!app.isPackaged) return
+  autoUpdater.autoDownload = true
+  autoUpdater.autoInstallOnAppQuit = true
+  autoUpdater.on('update-downloaded', (info) => {
+    for (const win of BrowserWindow.getAllWindows()) {
+      win.webContents.send('update:ready', info.version)
+    }
+  })
+  autoUpdater.on('error', () => {
+    // offline or GitHub unreachable: try again on the next interval
+  })
+  autoUpdater.checkForUpdates().catch(() => {})
+  setInterval(() => autoUpdater.checkForUpdates().catch(() => {}), 4 * 60 * 60 * 1000)
+}
 
 function registerIpc(): void {
   // --- settings ---
@@ -172,6 +197,63 @@ function registerIpc(): void {
   ipcMain.handle('meetings:resummarize', (_e, id: string) => {
     summarizeMeeting(id)
   })
+  ipcMain.handle('update:install', () => {
+    autoUpdater.quitAndInstall()
+  })
+
+  // full-text search across titles, summaries, and transcripts
+  ipcMain.handle('meetings:search', (_e, query: string): { id: string; snippet: string }[] => {
+    const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean)
+    if (words.length === 0) return []
+    const results: { id: string; snippet: string }[] = []
+    for (const entry of listMeetings()) {
+      const m = readMeeting(entry.id)
+      if (!m) continue
+      const transcriptText = (m.transcript ?? []).map((s) => s.text).join(' ')
+      const summaryText = m.summary ? JSON.stringify(m.summary) : ''
+      const haystack = `${m.title} ${summaryText} ${transcriptText}`.toLowerCase()
+      if (!words.every((w) => haystack.includes(w))) continue
+      // snippet: context around the first word's first appearance in the transcript
+      let snippet = ''
+      const pos = transcriptText.toLowerCase().indexOf(words[0])
+      if (pos >= 0) {
+        const start = Math.max(0, pos - 50)
+        snippet =
+          (start > 0 ? '…' : '') +
+          transcriptText.slice(start, pos + 90).trim() +
+          (pos + 90 < transcriptText.length ? '…' : '')
+      }
+      results.push({ id: m.id, snippet })
+    }
+    return results
+  })
+
+  ipcMain.handle('meetings:deleteAudio', (_e, id: string) => {
+    const m = readMeeting(id)
+    if (!m) return null
+    const file = findAudio(id)
+    if (file) rmSync(file, { force: true })
+    m.hasAudio = false
+    writeMeeting(m)
+    return m
+  })
+
+  ipcMain.handle('meetings:storageStats', () => {
+    let totalBytes = 0
+    let audioBytes = 0
+    let count = 0
+    for (const entry of readdirSync(meetingsRoot(), { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue
+      count++
+      for (const f of readdirSync(meetingDir(entry.name))) {
+        const size = statSync(join(meetingDir(entry.name), f)).size
+        totalBytes += size
+        if (f === 'audio.webm' || f === 'audio.wav') audioBytes += size
+      }
+    }
+    return { count, totalBytes, audioBytes }
+  })
+
   ipcMain.handle('meetings:import', (_e, title: string, dateIso: string, text: string) => {
     const meeting = createImportedMeeting(title, dateIso, text)
     // transcript already exists, so this goes straight to summarization

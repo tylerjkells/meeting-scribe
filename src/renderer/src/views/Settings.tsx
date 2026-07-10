@@ -28,6 +28,17 @@ export function SettingsView({
   const [dlProgress, setDlProgress] = useState<EngineProgress | null>(null)
   const [downloading, setDownloading] = useState<WhisperModel | null>(null)
   const [personDraft, setPersonDraft] = useState('')
+  const [storage, setStorage] = useState<{ count: number; totalBytes: number; audioBytes: number } | null>(null)
+
+  useEffect(() => {
+    window.scribe.meetings.storageStats().then(setStorage)
+  }, [])
+
+  function formatBytes(n: number): string {
+    if (n >= 1073741824) return `${(n / 1073741824).toFixed(1)} GB`
+    if (n >= 1048576) return `${(n / 1048576).toFixed(0)} MB`
+    return `${Math.max(1, Math.round(n / 1024))} KB`
+  }
 
   async function addPersonToDirectory(): Promise<void> {
     const name = personDraft.trim()
@@ -225,6 +236,18 @@ export function SettingsView({
           </button>
         </div>
       </div>
+
+      {storage && storage.count > 0 && (
+        <div className="settings-group">
+          <h2>Storage</h2>
+          <p className="hint">
+            {storage.count} {storage.count === 1 ? 'meeting' : 'meetings'} using{' '}
+            {formatBytes(storage.totalBytes)}, of which {formatBytes(storage.audioBytes)} is audio.
+            To reclaim space, open a meeting and use &ldquo;Delete audio, keep notes&rdquo;:
+            transcripts and summaries are tiny and stay searchable forever.
+          </p>
+        </div>
+      )}
 
       <div className="settings-group">
         <h2>Behavior</h2>

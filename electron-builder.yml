@@ -16,5 +16,10 @@ nsis:
   oneClick: true
   perMachine: false
   deleteAppDataOnUninstall: false
+  artifactName: MeetingScribe-Setup-${version}.exe
+publish:
+  provider: github
+  owner: tylerjkells
+  repo: meeting-scribe
 portable:
   artifactName: MeetingScribe-portable.exe

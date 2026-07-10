@@ -35,6 +35,9 @@ export default function App(): React.JSX.Element {
   // the live recorder is held here so it survives view changes
   const [rec, setRec] = useState<RecorderHandles | null>(null)
   const [paused, setPaused] = useState(false)
+  const [updateVersion, setUpdateVersion] = useState<string | null>(null)
+
+  useEffect(() => window.scribe.update.onReady(setUpdateVersion), [])
 
   const refreshMeetings = useCallback(() => {
     window.scribe.meetings.list().then(setMeetings)
@@ -87,6 +90,15 @@ export default function App(): React.JSX.Element {
           <GearIcon /> Settings
         </button>
         <div className="sidebar-spacer" />
+        {updateVersion && !rec && (
+          <button
+            className="update-chip"
+            onClick={() => window.scribe.update.install()}
+            title={`Version ${updateVersion} is downloaded and ready`}
+          >
+            Update ready · restart
+          </button>
+        )}
         {rec ? (
           view.name !== 'record' && (
             <button

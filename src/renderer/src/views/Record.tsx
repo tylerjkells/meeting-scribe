@@ -26,6 +26,16 @@ export function RecordView({
   const [elapsed, setElapsed] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [finishing, setFinishing] = useState(false)
+  const [liveText, setLiveText] = useState<string>('')
+
+  useEffect(() => {
+    if (!rec) return
+    setLiveText('')
+    return window.scribe.rec.onLive((u) => {
+      if (u.id !== rec.id) return
+      setLiveText(u.segments.map((s) => s.text).join(' '))
+    })
+  }, [rec])
 
   const engineReady = engine?.binaryReady && engine?.modelReady
 
@@ -129,6 +139,11 @@ export function RecordView({
         {formatDuration(elapsed)}
       </div>
       <Meters rec={rec} />
+      {liveText && (
+        <p className="live-captions" aria-live="polite">
+          {liveText}
+        </p>
+      )}
       <p className="mode-hint">
         You can browse other meetings while this records; the sidebar shows a live indicator that
         brings you back here.
@@ -146,7 +161,7 @@ export function RecordView({
           {paused ? 'Resume' : 'Pause'}
         </button>
         <button className="btn btn-primary" onClick={stop} disabled={finishing}>
-          <StopIcon /> {finishing ? 'Saving…' : 'Stop and transcribe'}
+          <StopIcon /> {finishing ? 'Finishing transcript…' : 'Stop and transcribe'}
         </button>
         <button className="btn btn-ghost btn-danger" onClick={discard} disabled={finishing}>
           Discard
