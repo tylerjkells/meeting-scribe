@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import type { EngineProgress, EngineStatus, Meeting, RecordingMode } from '../../../shared/types'
+import type {
+  EngineProgress,
+  EngineStatus,
+  Meeting,
+  RecordingMode,
+  TranscriptSegment
+} from '../../../shared/types'
 import { startRecording, readLevel, type RecorderHandles } from '../recorder'
 import { formatDuration, MicIcon, StopIcon } from '../ui'
 
@@ -26,14 +32,22 @@ export function RecordView({
   const [elapsed, setElapsed] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [finishing, setFinishing] = useState(false)
-  const [liveText, setLiveText] = useState<string>('')
+  const [liveSegs, setLiveSegs] = useState<TranscriptSegment[]>([])
+  const livePanelRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!rec) return
-    setLiveText('')
+    setLiveSegs([])
     return window.scribe.rec.onLive((u) => {
       if (u.id !== rec.id) return
-      setLiveText(u.segments.map((s) => s.text).join(' '))
+      setLiveSegs(u.segments)
+      // follow the newest text unless the user scrolled up to re-read
+      requestAnimationFrame(() => {
+        const el = livePanelRef.current
+        if (!el) return
+        const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120
+        if (nearBottom) el.scrollTop = el.scrollHeight
+      })
     })
   }, [rec])
 
@@ -139,10 +153,15 @@ export function RecordView({
         {formatDuration(elapsed)}
       </div>
       <Meters rec={rec} />
-      {liveText && (
-        <p className="live-captions" aria-live="polite">
-          {liveText}
-        </p>
+      {liveSegs.length > 0 && (
+        <div className="live-panel" ref={livePanelRef} aria-live="polite" aria-label="Live transcript">
+          {liveSegs.map((seg, i) => (
+            <div className="transcript-seg" key={i}>
+              <span className="transcript-time">{formatDuration(seg.from)}</span>
+              <span className="transcript-text">{seg.text}</span>
+            </div>
+          ))}
+        </div>
       )}
       <p className="mode-hint">
         You can browse other meetings while this records; the sidebar shows a live indicator that

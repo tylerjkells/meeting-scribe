@@ -27,10 +27,17 @@ function run() {
   return r.status === 0
 }
 
-if (run()) process.exit(0)
-console.log('\npackaging failed once (likely AV scan race); retrying in 10s…\n')
-cleanTemp()
-setTimeout(() => {
-  cleanTemp()
-  process.exit(run() ? 0 : 1)
-}, 10000)
+async function main() {
+  const delays = [10000, 30000]
+  if (run()) return 0
+  for (const delay of delays) {
+    console.log(`\npackaging failed (likely AV scan race); retrying in ${delay / 1000}s…\n`)
+    cleanTemp()
+    await new Promise((r) => setTimeout(r, delay))
+    cleanTemp()
+    if (run()) return 0
+  }
+  return 1
+}
+
+main().then((code) => process.exit(code))

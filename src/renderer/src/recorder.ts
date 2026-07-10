@@ -1,3 +1,4 @@
+import fixWebmDuration from 'fix-webm-duration'
 import type { EnergySample, Meeting, RecordingMode } from '../../shared/types'
 
 /**
@@ -267,10 +268,13 @@ export async function startRecording(mode: RecordingMode): Promise<RecorderHandl
 
   async function stop(): Promise<Meeting> {
     const durationMs = elapsedMs()
-    const blob = await new Promise<Blob>((resolve) => {
+    const raw = await new Promise<Blob>((resolve) => {
       recorder.onstop = () => resolve(new Blob(chunks, { type: 'audio/webm' }))
       recorder.stop()
     })
+    // MediaRecorder writes no duration header; patch it in so playback and
+    // seeking work correctly regardless of file length
+    const blob = await fixWebmDuration(raw, durationMs, { logger: false }).catch(() => raw)
     await teardown()
     // flush remaining downsampled samples after the pump has fully drained
     if (outBuf.length > 0) {

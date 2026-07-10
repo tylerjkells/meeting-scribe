@@ -72,32 +72,38 @@ function AudioPlayer({
     }
   }, [control])
 
-  // MediaRecorder webm files report Infinity duration until forced to scan;
-  // this nudge makes Chromium compute the real value.
+  // Older recordings lack a duration header (MediaRecorder quirk); force a
+  // scan and keep listening until Chromium reports a real duration, however
+  // long the file takes to scan.
   function onLoadedMetadata(): void {
     const a = audioRef.current
     if (!a) return
-    if (!isFinite(a.duration)) {
-      a.currentTime = 1e10
-      a.addEventListener(
-        'durationchange',
-        () => {
-          if (isFinite(a.duration)) {
-            setDuration(a.duration)
-            a.currentTime = 0
-          }
-        },
-        { once: true }
-      )
-    } else {
+    if (isFinite(a.duration) && a.duration > 0) {
       setDuration(a.duration)
+      return
     }
+    const onDur = (): void => {
+      if (isFinite(a.duration) && a.duration > 0) {
+        a.removeEventListener('durationchange', onDur)
+        setDuration(a.duration)
+        a.currentTime = 0
+        setTime(0)
+      }
+    }
+    a.addEventListener('durationchange', onDur)
+    a.currentTime = 1e10
   }
 
   function toggle(): void {
     const a = audioRef.current
     if (!a) return
     if (a.paused) {
+      // if the playhead is parked at the end (post-scan or after finishing),
+      // start from the beginning instead of silently doing nothing
+      if (a.ended || (isFinite(a.duration) && a.duration > 0 && a.currentTime >= a.duration - 0.1)) {
+        a.currentTime = 0
+        setTime(0)
+      }
       a.play()
     } else {
       a.pause()

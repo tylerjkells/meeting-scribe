@@ -126,7 +126,7 @@ export class LiveTranscriber {
         })
       }
       this.prevText = segs.map((s) => s.text).join(' ')
-      this.onUpdate(this.segments.slice(-3), Math.round(this.offsetMs))
+      this.onUpdate([...this.segments], Math.round(this.offsetMs))
     } finally {
       rmSync(wav, { force: true })
     }
