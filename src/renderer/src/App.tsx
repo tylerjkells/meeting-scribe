@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { AppSettings, EngineStatus, Meeting, MeetingListItem } from '../../shared/types'
+import type { RecorderHandles } from './recorder'
 import { LibraryView } from './views/Library'
 import { RecordView } from './views/Record'
 import { MeetingView } from './views/MeetingDetail'
 import { SettingsView } from './views/Settings'
 import { ActionsView } from './views/Actions'
 import { ImportView } from './views/Import'
-import { MicIcon, ListIcon, GearIcon, CheckIcon } from './ui'
+import { MicIcon, ListIcon, GearIcon, CheckIcon, formatDuration } from './ui'
 
 export type View =
   | { name: 'library' }
@@ -16,12 +17,24 @@ export type View =
   | { name: 'import' }
   | { name: 'settings' }
 
+/** compact live timer for the sidebar recording indicator */
+function RecTicker({ rec }: { rec: RecorderHandles }): React.JSX.Element {
+  const [, force] = useState(0)
+  useEffect(() => {
+    const t = setInterval(() => force((n) => n + 1), 500)
+    return () => clearInterval(t)
+  }, [])
+  return <>{formatDuration(rec.elapsedMs())}</>
+}
+
 export default function App(): React.JSX.Element {
   const [view, setView] = useState<View>({ name: 'library' })
   const [meetings, setMeetings] = useState<MeetingListItem[]>([])
   const [settings, setSettings] = useState<AppSettings | null>(null)
   const [engine, setEngine] = useState<EngineStatus | null>(null)
-  const [recording, setRecording] = useState(false)
+  // the live recorder is held here so it survives view changes
+  const [rec, setRec] = useState<RecorderHandles | null>(null)
+  const [paused, setPaused] = useState(false)
 
   const refreshMeetings = useCallback(() => {
     window.scribe.meetings.list().then(setMeetings)
@@ -35,6 +48,17 @@ export default function App(): React.JSX.Element {
     return off
   }, [refreshMeetings])
 
+  // guard against losing an active recording by closing the window
+  useEffect(() => {
+    if (!rec) return
+    const guard = (e: BeforeUnloadEvent): void => {
+      e.preventDefault()
+      e.returnValue = false
+    }
+    window.addEventListener('beforeunload', guard)
+    return () => window.removeEventListener('beforeunload', guard)
+  }, [rec])
+
   const openMeeting = (id: string): void => setView({ name: 'meeting', id })
 
   return (
@@ -46,30 +70,40 @@ export default function App(): React.JSX.Element {
         </div>
         <button
           className={`nav-btn ${view.name === 'library' || view.name === 'meeting' ? 'active' : ''}`}
-          onClick={() => !recording && setView({ name: 'library' })}
-          disabled={recording}
+          onClick={() => setView({ name: 'library' })}
         >
           <ListIcon /> Meetings
         </button>
         <button
           className={`nav-btn ${view.name === 'actions' ? 'active' : ''}`}
-          onClick={() => !recording && setView({ name: 'actions' })}
-          disabled={recording}
+          onClick={() => setView({ name: 'actions' })}
         >
           <CheckIcon /> Action items
         </button>
         <button
           className={`nav-btn ${view.name === 'settings' ? 'active' : ''}`}
-          onClick={() => !recording && setView({ name: 'settings' })}
-          disabled={recording}
+          onClick={() => setView({ name: 'settings' })}
         >
           <GearIcon /> Settings
         </button>
         <div className="sidebar-spacer" />
-        {view.name !== 'record' && (
-          <button className="record-cta" onClick={() => setView({ name: 'record' })}>
-            <MicIcon /> New recording
-          </button>
+        {rec ? (
+          view.name !== 'record' && (
+            <button
+              className={`rec-indicator ${paused ? 'paused' : ''}`}
+              onClick={() => setView({ name: 'record' })}
+              title="Back to the recording"
+            >
+              <span className="dot" aria-hidden="true" />
+              {paused ? 'Paused' : 'Recording'} · <RecTicker rec={rec} />
+            </button>
+          )
+        ) : (
+          view.name !== 'record' && (
+            <button className="record-cta" onClick={() => setView({ name: 'record' })}>
+              <MicIcon /> New recording
+            </button>
+          )
         )}
       </nav>
 
@@ -87,7 +121,10 @@ export default function App(): React.JSX.Element {
             <RecordView
               engine={engine}
               onEngineReady={setEngine}
-              onRecordingChange={setRecording}
+              rec={rec}
+              setRec={setRec}
+              paused={paused}
+              setPaused={setPaused}
               onDone={(m: Meeting) => {
                 refreshMeetings()
                 setView({ name: 'meeting', id: m.id })

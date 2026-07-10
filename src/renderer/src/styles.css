@@ -200,6 +200,45 @@ button:disabled {
   transform: scale(0.97);
 }
 
+.rec-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  padding: var(--s3) var(--s4);
+  border-radius: var(--r-ctl);
+  border: 1px solid var(--accent-dim);
+  background: var(--accent-tint);
+  color: var(--accent-strong);
+  font-weight: 650;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  transition: background var(--t-fast) var(--ease-out);
+}
+
+.rec-indicator:hover {
+  background: oklch(0.63 0.17 27 / 0.2);
+}
+
+.rec-indicator .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 1.6s var(--ease-out) infinite;
+}
+
+.rec-indicator.paused {
+  border-color: var(--line);
+  background: var(--bg-raised);
+  color: var(--warn);
+}
+
+.rec-indicator.paused .dot {
+  background: var(--warn);
+  animation: none;
+}
+
 .main {
   overflow-y: auto;
   padding: var(--s6) var(--s7);

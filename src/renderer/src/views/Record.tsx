@@ -6,55 +6,44 @@ import { formatDuration, MicIcon, StopIcon } from '../ui'
 export function RecordView({
   engine,
   onEngineReady,
-  onRecordingChange,
+  rec,
+  setRec,
+  paused,
+  setPaused,
   onDone,
   onCancel
 }: {
   engine: EngineStatus | null
   onEngineReady: (s: EngineStatus) => void
-  onRecordingChange: (rec: boolean) => void
+  rec: RecorderHandles | null
+  setRec: (r: RecorderHandles | null) => void
+  paused: boolean
+  setPaused: (p: boolean) => void
   onDone: (m: Meeting) => void
   onCancel: () => void
 }): React.JSX.Element {
   const [mode, setMode] = useState<RecordingMode>('virtual')
-  const [rec, setRec] = useState<RecorderHandles | null>(null)
   const [elapsed, setElapsed] = useState(0)
-  const [paused, setPaused] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [finishing, setFinishing] = useState(false)
-  const recRef = useRef<RecorderHandles | null>(null)
 
   const engineReady = engine?.binaryReady && engine?.modelReady
-
-  useEffect(() => {
-    onRecordingChange(rec !== null)
-    // reset on unmount: stopping a recording navigates away before the
-    // rec-state effect can fire again, which would leave the nav locked
-    return () => onRecordingChange(false)
-  }, [rec, onRecordingChange])
 
   // timer (excludes paused time)
   useEffect(() => {
     if (!rec) return
+    setElapsed(rec.elapsedMs())
     const t = setInterval(() => setElapsed(rec.elapsedMs()), 250)
     return () => clearInterval(t)
   }, [rec])
-
-  // cancel a live recording if the component unmounts unexpectedly
-  useEffect(() => {
-    return () => {
-      recRef.current?.cancel()
-    }
-  }, [])
 
   async function begin(): Promise<void> {
     setError(null)
     try {
       const handles = await startRecording(mode)
-      recRef.current = handles
       setRec(handles)
-      setElapsed(0)
       setPaused(false)
+      setElapsed(0)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not start recording')
     }
@@ -65,11 +54,12 @@ export function RecordView({
     setFinishing(true)
     try {
       const meeting = await rec.stop()
-      recRef.current = null
       setRec(null)
+      setPaused(false)
       onDone(meeting)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save recording')
+    } finally {
       setFinishing(false)
     }
   }
@@ -79,8 +69,8 @@ export function RecordView({
     const sure = window.confirm('Discard this recording? The audio will be deleted.')
     if (!sure) return
     await rec.cancel()
-    recRef.current = null
     setRec(null)
+    setPaused(false)
     onCancel()
   }
 
@@ -139,6 +129,10 @@ export function RecordView({
         {formatDuration(elapsed)}
       </div>
       <Meters rec={rec} />
+      <p className="mode-hint">
+        You can browse other meetings while this records; the sidebar shows a live indicator that
+        brings you back here.
+      </p>
       <div className="rec-actions">
         <button
           className="btn"
