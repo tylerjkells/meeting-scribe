@@ -1,0 +1,116 @@
+import { BrowserWindow } from 'electron'
+import { existsSync, readFileSync, rmSync } from 'fs'
+import { readMeeting, writeMeeting, wavPath, energyPath } from './store'
+import { transcribe } from './whisper'
+import { summarizeTranscript } from './summarize'
+import { getSettings } from './settings'
+import type { EnergySample, Meeting, TranscriptSegment } from '../shared/types'
+
+/**
+ * Attribute each transcript segment to "me" (mic) or "them" (system audio)
+ * using the per-source loudness timeline captured while recording.
+ */
+function labelSpeakers(id: string, segments: TranscriptSegment[]): void {
+  const path = energyPath(id)
+  if (!existsSync(path)) return
+  try {
+    const samples = JSON.parse(readFileSync(path, 'utf-8')) as EnergySample[]
+    for (const seg of segments) {
+      let mic = 0
+      let sys = 0
+      let n = 0
+      for (const s of samples) {
+        if (s.t >= seg.from && s.t <= seg.to) {
+          mic += s.mic
+          sys += s.sys
+          n++
+        }
+      }
+      if (n === 0 || mic + sys < 0.01) continue
+      seg.speaker = mic >= sys ? 'me' : 'them'
+    }
+  } catch {
+    // unreadable timeline: ship the transcript unlabeled
+  }
+  rmSync(path, { force: true })
+}
+
+function broadcast(meeting: Meeting): void {
+  for (const win of BrowserWindow.getAllWindows()) {
+    win.webContents.send('meeting:updated', meeting)
+  }
+}
+
+function update(meeting: Meeting, patch: Partial<Meeting>): Meeting {
+  const next = { ...meeting, ...patch }
+  writeMeeting(next)
+  broadcast(next)
+  return next
+}
+
+const inFlight = new Set<string>()
+
+/** Run transcription (and summarization if enabled) for a recorded meeting. */
+export async function processMeeting(id: string): Promise<void> {
+  if (inFlight.has(id)) return
+  inFlight.add(id)
+  try {
+    let meeting = readMeeting(id)
+    if (!meeting) return
+    const settings = getSettings()
+
+    if (!meeting.transcript || meeting.transcript.length === 0) {
+      const wav = wavPath(id)
+      if (!existsSync(wav)) {
+        update(meeting, { stage: 'error', error: 'Recording audio for transcription is missing.' })
+        return
+      }
+      meeting = update(meeting, { stage: 'transcribing', progress: 0, error: undefined })
+      try {
+        const transcript = await transcribe(wav, settings.whisperModel, (percent) => {
+          meeting = update(meeting!, { stage: 'transcribing', progress: percent })
+        })
+        labelSpeakers(id, transcript)
+        meeting = update(meeting, { transcript, progress: undefined })
+        rmSync(wav, { force: true })
+      } catch (err) {
+        update(meeting, {
+          stage: 'error',
+          progress: undefined,
+          error: err instanceof Error ? err.message : 'Transcription failed'
+        })
+        return
+      }
+    }
+
+    if (!settings.autoSummarize || !settings.hasApiKey) {
+      update(meeting, { stage: 'transcript-only', progress: undefined })
+      return
+    }
+    await summarizeMeeting(id)
+  } finally {
+    inFlight.delete(id)
+  }
+}
+
+export async function summarizeMeeting(id: string): Promise<void> {
+  let meeting = readMeeting(id)
+  const transcript = meeting?.transcript
+  if (!meeting || !transcript || transcript.length === 0) return
+  const settings = getSettings()
+  meeting = update(meeting, { stage: 'summarizing', error: undefined })
+  try {
+    const summary = await summarizeTranscript(transcript, settings.claudeModel)
+    const keepUserTitle = meeting.title && !/^(Virtual meeting|Meeting) · /.test(meeting.title)
+    update(meeting, {
+      summary,
+      title: keepUserTitle ? meeting.title : summary.title,
+      stage: 'ready'
+    })
+  } catch (err) {
+    update(meeting, {
+      stage: 'transcript-only',
+      error: err instanceof Error ? err.message : 'Summarization failed'
+    })
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "name": "meeting-scribe",
+  "version": "0.1.0",
+  "description": "Record, transcribe, and AI-summarize your meetings. Locally, privately, no subscription.",
+  "main": "out/main/index.js",
+  "author": "Tyler Kells",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "dev": "electron-vite dev -w",
+    "build": "electron-vite build",
+    "start": "electron-vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "predist": "node -e \"const fs=require('fs');for(const d of ['dist-installer/win-unpacked','dist-installer/win-unpacked.tmp'])fs.rmSync(d,{recursive:true,force:true})\"",
+    "dist": "electron-vite build && electron-builder --win -c.directories.output=dist-installer"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.110.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.2.0",
+    "electron": "^43.1.0",
+    "electron-builder": "^26.15.3",
+    "electron-vite": "^5.0.0",
+    "png-to-ico": "^3.0.2",
+    "typescript": "^7.0.2",
+    "vite": "^7.3.6"
+  }
+}
