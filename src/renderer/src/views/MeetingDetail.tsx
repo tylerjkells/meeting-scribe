@@ -145,9 +145,12 @@ export function MeetingView({
   const titleRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    window.scribe.actions.list().then((items) => {
-      setKnownOwners([...new Set(items.map((i) => i.owner).filter((o): o is string => !!o))])
-    })
+    Promise.all([window.scribe.settings.get(), window.scribe.actions.list()]).then(
+      ([settings, items]) => {
+        const seen = items.map((i) => i.owner).filter((o): o is string => !!o)
+        setKnownOwners([...new Set(['Me', ...settings.people, ...seen])])
+      }
+    )
   }, [id])
 
   useEffect(() => {

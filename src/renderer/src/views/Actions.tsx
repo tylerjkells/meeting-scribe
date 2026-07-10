@@ -4,11 +4,13 @@ import { formatWhen, OwnerEditor } from '../ui'
 
 export function ActionsView({ onOpen }: { onOpen: (id: string) => void }): React.JSX.Element {
   const [items, setItems] = useState<ActionRollupItem[]>([])
+  const [directory, setDirectory] = useState<string[]>([])
   const [showDone, setShowDone] = useState(false)
   const [loaded, setLoaded] = useState(false)
   const [who, setWho] = useState<string>('me')
 
   useEffect(() => {
+    window.scribe.settings.get().then((s) => setDirectory(s.people))
     window.scribe.actions.list().then((list) => {
       setItems(list)
       setLoaded(true)
@@ -51,8 +53,10 @@ export function ActionsView({ onOpen }: { onOpen: (id: string) => void }): React
   }
 
   const knownOwners = useMemo(
-    () => [...new Set(items.map((i) => i.owner).filter((o): o is string => !!o))],
-    [items]
+    () => [
+      ...new Set(['Me', ...directory, ...items.map((i) => i.owner).filter((o): o is string => !!o)])
+    ],
+    [items, directory]
   )
 
   async function setOwner(item: ActionRollupItem, owner: string | null): Promise<void> {

@@ -1167,6 +1167,46 @@ input[type='date'] {
   color: var(--accent);
 }
 
+/* ---------- team directory ---------- */
+
+.person-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin-bottom: var(--s3);
+}
+
+.person-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 550;
+  padding: 4px 6px 4px 12px;
+  border-radius: 999px;
+  background: var(--bg-raised);
+  border: 1px solid var(--line-soft);
+}
+
+.person-remove {
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--ink-faint);
+  font-size: 14px;
+  line-height: 1;
+  transition:
+    background var(--t-fast) var(--ease-out),
+    color var(--t-fast) var(--ease-out);
+}
+
+.person-remove:hover {
+  background: var(--accent-tint);
+  color: var(--accent-strong);
+}
+
 /* ---------- person filter ---------- */
 
 .who-filter {

@@ -24,7 +24,7 @@ import {
   cancelRecording,
   audioPath
 } from './store'
-import { getSettings, updateSettings, setApiKey } from './settings'
+import { getSettings, updateSettings, setApiKey, addPerson } from './settings'
 import { engineStatus, setupEngine } from './whisper'
 import { processMeeting, summarizeMeeting } from './pipeline'
 import { askAboutMeeting, testApiKey } from './summarize'
@@ -188,6 +188,7 @@ function registerIpc(): void {
         me: names.me.trim() || 'Me',
         them: names.them.trim() || 'Them'
       }
+      if (m.speakerNames.them !== 'Them') addPerson(m.speakerNames.them)
       writeMeeting(m)
       return m
     }
@@ -239,6 +240,7 @@ function registerIpc(): void {
       const item = m?.summary?.actionItems[index]
       if (!m || !item) return null
       item.owner = owner?.trim() || null
+      if (item.owner) addPerson(item.owner)
       writeMeeting(m)
       for (const win of BrowserWindow.getAllWindows()) {
         win.webContents.send('meeting:updated', m)

@@ -7,6 +7,7 @@ interface StoredSettings {
   whisperModel: WhisperModel
   claudeModel: string
   autoSummarize: boolean
+  people: string[]
   /** base64 of safeStorage-encrypted API key */
   apiKeyEncrypted: string | null
 }
@@ -15,6 +16,7 @@ const DEFAULTS: StoredSettings = {
   whisperModel: 'small.en',
   claudeModel: 'claude-haiku-4-5',
   autoSummarize: true,
+  people: [],
   apiKeyEncrypted: null
 }
 
@@ -49,17 +51,46 @@ export function getSettings(): AppSettings {
     whisperModel: s.whisperModel,
     claudeModel: s.claudeModel,
     autoSummarize: s.autoSummarize,
+    people: s.people ?? [],
     hasApiKey: !!s.apiKeyEncrypted
   }
 }
 
-export function updateSettings(patch: Partial<Pick<AppSettings, 'whisperModel' | 'claudeModel' | 'autoSummarize'>>): AppSettings {
+export function updateSettings(
+  patch: Partial<Pick<AppSettings, 'whisperModel' | 'claudeModel' | 'autoSummarize' | 'people'>>
+): AppSettings {
   const s = load()
   if (patch.whisperModel) s.whisperModel = patch.whisperModel
   if (patch.claudeModel) s.claudeModel = patch.claudeModel
   if (typeof patch.autoSummarize === 'boolean') s.autoSummarize = patch.autoSummarize
+  if (Array.isArray(patch.people)) {
+    s.people = dedupeNames(patch.people)
+  }
   persist()
   return getSettings()
+}
+
+function dedupeNames(names: string[]): string[] {
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const raw of names) {
+    const name = String(raw).trim()
+    const key = name.toLowerCase()
+    if (!name || key === 'me' || seen.has(key)) continue
+    seen.add(key)
+    out.push(name)
+  }
+  return out.sort((a, b) => a.localeCompare(b))
+}
+
+/** Add someone to the team directory (used when assigning a new name). */
+export function addPerson(name: string): void {
+  const trimmed = name.trim()
+  if (!trimmed || trimmed.toLowerCase() === 'me') return
+  const s = load()
+  if ((s.people ?? []).some((p) => p.toLowerCase() === trimmed.toLowerCase())) return
+  s.people = dedupeNames([...(s.people ?? []), trimmed])
+  persist()
 }
 
 export function setApiKey(key: string | null): AppSettings {

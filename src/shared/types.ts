@@ -108,6 +108,8 @@ export interface AppSettings {
   claudeModel: string
   autoSummarize: boolean
   hasApiKey: boolean
+  /** team directory: names offered when assigning action items */
+  people: string[]
 }
 
 export interface EngineStatus {

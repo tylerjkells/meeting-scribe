@@ -27,6 +27,14 @@ export function SettingsView({
   const [savingKey, setSavingKey] = useState(false)
   const [dlProgress, setDlProgress] = useState<EngineProgress | null>(null)
   const [downloading, setDownloading] = useState<WhisperModel | null>(null)
+  const [personDraft, setPersonDraft] = useState('')
+
+  async function addPersonToDirectory(): Promise<void> {
+    const name = personDraft.trim()
+    if (!name) return
+    onChange(await window.scribe.settings.update({ people: [...settings.people, name] }))
+    setPersonDraft('')
+  }
 
   useEffect(() => window.scribe.engine.onProgress(setDlProgress), [])
 
@@ -173,6 +181,49 @@ export function SettingsView({
             </div>
           </div>
         )}
+      </div>
+
+      <div className="settings-group">
+        <h2>Team directory</h2>
+        <p className="hint">
+          Names offered in the assign dropdown on action items. Assigning someone new, or naming a
+          speaker, adds them here automatically.
+        </p>
+        {settings.people.length > 0 && (
+          <div className="person-list">
+            {settings.people.map((p) => (
+              <span className="person-chip" key={p}>
+                {p}
+                <button
+                  className="person-remove"
+                  aria-label={`Remove ${p} from directory`}
+                  onClick={async () =>
+                    onChange(
+                      await window.scribe.settings.update({
+                        people: settings.people.filter((x) => x !== p)
+                      })
+                    )
+                  }
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+        <div className="field-row">
+          <input
+            className="text-input"
+            placeholder="Add a name"
+            value={personDraft}
+            onChange={(e) => setPersonDraft(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && addPersonToDirectory()}
+            aria-label="Add a person to the team directory"
+          />
+          <button className="btn" onClick={addPersonToDirectory} disabled={!personDraft.trim()}>
+            Add
+          </button>
+        </div>
       </div>
 
       <div className="settings-group">
