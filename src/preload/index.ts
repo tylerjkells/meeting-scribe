@@ -60,6 +60,7 @@ const api = {
       return () => ipcRenderer.removeListener('rec:live', handler)
     }
   },
+  appVersion: (): Promise<string> => ipcRenderer.invoke('app:version'),
   update: {
     onReady: (cb: (version: string) => void): (() => void) => {
       const handler = (_e: unknown, v: string): void => cb(v)

@@ -29,9 +29,11 @@ export function SettingsView({
   const [downloading, setDownloading] = useState<WhisperModel | null>(null)
   const [personDraft, setPersonDraft] = useState('')
   const [storage, setStorage] = useState<{ count: number; totalBytes: number; audioBytes: number } | null>(null)
+  const [version, setVersion] = useState('')
 
   useEffect(() => {
     window.scribe.meetings.storageStats().then(setStorage)
+    window.scribe.appVersion().then(setVersion)
   }, [])
 
   function formatBytes(n: number): string {
@@ -248,6 +250,18 @@ export function SettingsView({
           </p>
         </div>
       )}
+
+      <div className="settings-group">
+        <h2>About</h2>
+        <p className="hint">
+          MeetingScribe {version ? `v${version}` : ''} · updates install automatically from{' '}
+          <a href="https://github.com/tylerjkells/meeting-scribe/releases" target="_blank" rel="noreferrer">
+            GitHub releases
+          </a>
+          . Your recordings, transcripts, and summaries never leave this machine except the text
+          sent to Claude for summaries and questions.
+        </p>
+      </div>
 
       <div className="settings-group">
         <h2>Behavior</h2>

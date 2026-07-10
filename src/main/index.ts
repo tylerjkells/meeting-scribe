@@ -5,14 +5,13 @@ import {
   ipcMain,
   session,
   desktopCapturer,
-  net,
   protocol,
   dialog
 } from 'electron'
 import { writeFileSync } from 'fs'
 import { join } from 'path'
-import { pathToFileURL } from 'url'
-import { existsSync, readFileSync, readdirSync, rmSync, statSync } from 'fs'
+import { Readable } from 'stream'
+import { existsSync, readFileSync, readdirSync, rmSync, statSync, createReadStream } from 'fs'
 import { autoUpdater } from 'electron-updater'
 import {
   listMeetings,
@@ -89,13 +88,52 @@ app.whenReady().then(() => {
     { useSystemPicker: false }
   )
 
-  // Serve stored meeting audio to the renderer without exposing the filesystem
+  // Serve stored meeting audio to the renderer without exposing the
+  // filesystem. Range support matters: without it the media player cannot
+  // probe the end of a file for its duration or seek within long recordings.
   session.defaultSession.protocol.handle('scribe-media', (request) => {
     const id = decodeURIComponent(new URL(request.url).hostname)
     if (!/^[\w-]+$/.test(id)) return new Response('bad id', { status: 400 })
     const file = findAudio(id)
     if (!file) return new Response('not found', { status: 404 })
-    return net.fetch(pathToFileURL(file).toString())
+
+    const total = statSync(file).size
+    const mime = file.endsWith('.wav') ? 'audio/wav' : 'audio/webm'
+    const range = request.headers.get('range')
+
+    if (range) {
+      const m = range.match(/bytes=(\d*)-(\d*)/)
+      let start = m && m[1] ? parseInt(m[1], 10) : 0
+      let end = m && m[2] ? parseInt(m[2], 10) : total - 1
+      if (!Number.isFinite(start)) start = 0
+      if (!Number.isFinite(end) || end >= total) end = total - 1
+      if (start > end || start >= total) {
+        return new Response(null, {
+          status: 416,
+          headers: { 'Content-Range': `bytes */${total}` }
+        })
+      }
+      const stream = Readable.toWeb(createReadStream(file, { start, end }))
+      return new Response(stream as never, {
+        status: 206,
+        headers: {
+          'Content-Type': mime,
+          'Accept-Ranges': 'bytes',
+          'Content-Length': String(end - start + 1),
+          'Content-Range': `bytes ${start}-${end}/${total}`
+        }
+      })
+    }
+
+    const stream = Readable.toWeb(createReadStream(file))
+    return new Response(stream as never, {
+      status: 200,
+      headers: {
+        'Content-Type': mime,
+        'Accept-Ranges': 'bytes',
+        'Content-Length': String(total)
+      }
+    })
   })
 
   registerIpc()
@@ -200,6 +238,8 @@ function registerIpc(): void {
   ipcMain.handle('update:install', () => {
     autoUpdater.quitAndInstall()
   })
+
+  ipcMain.handle('app:version', () => app.getVersion())
 
   // full-text search across titles, summaries, and transcripts
   ipcMain.handle('meetings:search', (_e, query: string): { id: string; snippet: string }[] => {

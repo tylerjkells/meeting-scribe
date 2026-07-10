@@ -80,6 +80,16 @@ h3 {
   color: var(--ink);
 }
 
+a {
+  color: var(--accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+a:hover {
+  color: var(--accent);
+}
+
 button {
   font: inherit;
   color: inherit;
