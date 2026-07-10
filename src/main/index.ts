@@ -32,6 +32,7 @@ import { engineStatus, setupEngine } from './whisper'
 import { processMeeting, summarizeMeeting } from './pipeline'
 import { askAboutMeeting, testApiKey } from './summarize'
 import { createImportedMeeting } from './importer'
+import { patchLegacyAudioDurations } from './migrate'
 import type {
   ActionRollupItem,
   AppSettings,
@@ -139,6 +140,9 @@ app.whenReady().then(() => {
   registerIpc()
   createWindow()
   setupAutoUpdate()
+
+  // Repair pre-0.2.1 recordings whose webm lacks a duration header (seeking)
+  patchLegacyAudioDurations().catch(() => 0)
 
   // Salvage recordings orphaned by a crash, then resume interrupted processing
   recoverOrphanedRecordings()
