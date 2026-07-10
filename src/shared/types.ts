@@ -1,4 +1,4 @@
-export type RecordingMode = 'in-person' | 'virtual'
+export type RecordingMode = 'in-person' | 'virtual' | 'imported'
 
 export type MeetingStage =
   | 'recorded'

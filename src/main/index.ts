@@ -28,6 +28,7 @@ import { getSettings, updateSettings, setApiKey } from './settings'
 import { engineStatus, setupEngine } from './whisper'
 import { processMeeting, summarizeMeeting } from './pipeline'
 import { askAboutMeeting, testApiKey } from './summarize'
+import { createImportedMeeting } from './importer'
 import type {
   ActionRollupItem,
   AppSettings,
@@ -171,6 +172,13 @@ function registerIpc(): void {
   ipcMain.handle('meetings:resummarize', (_e, id: string) => {
     summarizeMeeting(id)
   })
+  ipcMain.handle('meetings:import', (_e, title: string, dateIso: string, text: string) => {
+    const meeting = createImportedMeeting(title, dateIso, text)
+    // transcript already exists, so this goes straight to summarization
+    processMeeting(meeting.id)
+    return meeting
+  })
+
   ipcMain.handle(
     'meetings:setSpeakers',
     (_e, id: string, names: { me: string; them: string }) => {

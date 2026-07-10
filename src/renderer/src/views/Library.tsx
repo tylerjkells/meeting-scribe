@@ -7,11 +7,13 @@ type LibView = 'list' | 'calendar'
 export function LibraryView({
   meetings,
   onOpen,
-  onRecord
+  onRecord,
+  onImport
 }: {
   meetings: MeetingListItem[]
   onOpen: (id: string) => void
   onRecord: () => void
+  onImport: () => void
 }): React.JSX.Element {
   const [query, setQuery] = useState('')
   const [libView, setLibView] = useState<LibView>(
@@ -57,6 +59,12 @@ export function LibraryView({
         <button className="btn btn-primary" onClick={onRecord}>
           Record your first meeting
         </button>
+        <p className="empty-alt">
+          Migrating from another tool?{' '}
+          <button className="link-btn" onClick={onImport}>
+            Import a transcript
+          </button>
+        </p>
       </div>
     )
   }
@@ -104,6 +112,9 @@ export function LibraryView({
               ? `${filtered.length} of ${meetings.length}`
               : `${meetings.length} ${meetings.length === 1 ? 'recording' : 'recordings'}`}
           </span>
+          <button className="btn btn-ghost" onClick={onImport}>
+            Import
+          </button>
         </div>
       </div>
 

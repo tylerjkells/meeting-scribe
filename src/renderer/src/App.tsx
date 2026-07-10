@@ -5,6 +5,7 @@ import { RecordView } from './views/Record'
 import { MeetingView } from './views/MeetingDetail'
 import { SettingsView } from './views/Settings'
 import { ActionsView } from './views/Actions'
+import { ImportView } from './views/Import'
 import { MicIcon, ListIcon, GearIcon, CheckIcon } from './ui'
 
 export type View =
@@ -12,6 +13,7 @@ export type View =
   | { name: 'record' }
   | { name: 'meeting'; id: string }
   | { name: 'actions' }
+  | { name: 'import' }
   | { name: 'settings' }
 
 export default function App(): React.JSX.Element {
@@ -78,6 +80,7 @@ export default function App(): React.JSX.Element {
               meetings={meetings}
               onOpen={openMeeting}
               onRecord={() => setView({ name: 'record' })}
+              onImport={() => setView({ name: 'import' })}
             />
           )}
           {view.name === 'record' && (
@@ -103,6 +106,15 @@ export default function App(): React.JSX.Element {
             />
           )}
           {view.name === 'actions' && <ActionsView onOpen={openMeeting} />}
+          {view.name === 'import' && (
+            <ImportView
+              onDone={(m) => {
+                refreshMeetings()
+                setView({ name: 'meeting', id: m.id })
+              }}
+              onCancel={() => setView({ name: 'library' })}
+            />
+          )}
           {view.name === 'settings' && settings && (
             <SettingsView settings={settings} onChange={setSettings} engine={engine} />
           )}

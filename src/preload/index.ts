@@ -56,6 +56,8 @@ const api = {
       ipcRenderer.invoke('meetings:ask', id, question),
     setSpeakers: (id: string, names: { me: string; them: string }): Promise<Meeting | null> =>
       ipcRenderer.invoke('meetings:setSpeakers', id, names),
+    import: (title: string, dateIso: string, text: string): Promise<Meeting> =>
+      ipcRenderer.invoke('meetings:import', title, dateIso, text),
     onUpdated: (cb: (m: Meeting) => void): (() => void) => {
       const handler = (_e: unknown, m: Meeting): void => cb(m)
       ipcRenderer.on('meeting:updated', handler)

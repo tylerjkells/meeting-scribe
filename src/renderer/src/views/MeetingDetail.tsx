@@ -248,7 +248,13 @@ export function MeetingView({
         <div className="detail-meta">
           <span>{formatWhen(meeting.createdAt)}</span>
           <span>{formatDuration(meeting.durationMs)}</span>
-          <span>{meeting.mode === 'virtual' ? 'virtual' : 'in person'}</span>
+          <span>
+            {meeting.mode === 'virtual'
+              ? 'virtual'
+              : meeting.mode === 'imported'
+                ? 'imported'
+                : 'in person'}
+          </span>
           <StageBadge stage={meeting.stage} progress={meeting.progress} />
         </div>
         {(meeting.summary || (meeting.transcript && meeting.transcript.length > 0)) && (
