@@ -697,6 +697,7 @@ button:disabled {
 
 .action-task {
   flex: 1;
+  min-width: 50%;
   text-wrap: pretty;
 }
 
@@ -710,7 +711,10 @@ button:disabled {
   color: var(--warn);
   font-size: 12.5px;
   font-family: var(--font-mono);
-  white-space: nowrap;
+  flex: 0 1 auto;
+  max-width: 24ch;
+  text-align: right;
+  text-wrap: pretty;
 }
 
 .collapse-head {

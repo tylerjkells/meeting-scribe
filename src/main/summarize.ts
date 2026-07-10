@@ -52,7 +52,8 @@ const SUMMARY_SCHEMA = {
           },
           due: {
             anyOf: [{ type: 'string' }, { type: 'null' }],
-            description: 'Due date/timeframe as stated, or null'
+            description:
+              'Concise due date or timeframe, a few words at most (e.g. "July 21st", "next week", "end of Q3"), or null. Qualifying context belongs in the task text, not here.'
           }
         },
         required: ['task', 'owner', 'due'],
