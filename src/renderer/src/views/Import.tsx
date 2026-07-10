@@ -72,6 +72,14 @@ export function ImportView({
               value={date}
               max={todayLocalIso()}
               onChange={(e) => setDate(e.target.value)}
+              onClick={(e) => {
+                // the field body should open the calendar, not just the tiny icon
+                try {
+                  ;(e.target as HTMLInputElement).showPicker()
+                } catch {
+                  // picker already open or not permitted; typing still works
+                }
+              }}
             />
           </div>
         </div>

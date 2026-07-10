@@ -1120,6 +1120,15 @@ select.text-input {
   flex: 0 0 170px;
 }
 
+input[type='date']::-webkit-calendar-picker-indicator {
+  filter: invert(0.75);
+  cursor: pointer;
+}
+
+input[type='date'] {
+  cursor: pointer;
+}
+
 .import-textarea {
   min-height: 260px;
   resize: vertical;
