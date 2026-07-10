@@ -66,8 +66,9 @@ export async function startRecording(mode: RecordingMode): Promise<RecorderHandl
   micSource.connect(mix)
 
   let sysAnalyser: AnalyserNode | null = null
+  let sysSource: MediaStreamAudioSourceNode | null = null
   if (sysStream) {
-    const sysSource = ctx.createMediaStreamSource(sysStream)
+    sysSource = ctx.createMediaStreamSource(sysStream)
     sysAnalyser = ctx.createAnalyser()
     sysAnalyser.fftSize = 512
     sysSource.connect(sysAnalyser)
@@ -157,6 +158,63 @@ export async function startRecording(mode: RecordingMode): Promise<RecorderHandl
   let pausedAt: number | null = null
   let pausedTotal = 0
 
+  // Windows loopback capture latches onto the output device that was default
+  // when it started. If the user switches outputs mid-meeting (speakers ->
+  // AirPods), re-acquire the loopback stream and splice it into the mix.
+  let defaultOutLabel: string | null = null
+  let reacquiring = false
+
+  async function currentDefaultOutputLabel(): Promise<string | null> {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices()
+      const def = devices.find((d) => d.kind === 'audiooutput' && d.deviceId === 'default')
+      return def?.label ?? null
+    } catch {
+      return null
+    }
+  }
+
+  async function reacquireSystemAudio(): Promise<void> {
+    if (reacquiring || stopped || mode !== 'virtual') return
+    reacquiring = true
+    try {
+      const display = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
+      display.getVideoTracks().forEach((t) => t.stop())
+      const audioTracks = display.getAudioTracks()
+      if (audioTracks.length === 0 || stopped) {
+        audioTracks.forEach((t) => t.stop())
+        return
+      }
+      const nextStream = new MediaStream(audioTracks)
+      const nextSource = ctx.createMediaStreamSource(nextStream)
+      if (sysAnalyser) nextSource.connect(sysAnalyser)
+      nextSource.connect(mix)
+      sysSource?.disconnect()
+      sysStream?.getTracks().forEach((t) => t.stop())
+      sysStream = nextStream
+      sysSource = nextSource
+    } catch {
+      // keep the existing capture if re-acquisition fails
+    } finally {
+      reacquiring = false
+    }
+  }
+
+  let deviceWatch: ReturnType<typeof setInterval> | null = null
+  if (mode === 'virtual') {
+    currentDefaultOutputLabel().then((label) => (defaultOutLabel = label))
+    deviceWatch = setInterval(async () => {
+      if (stopped || pausedAt !== null) return
+      const label = await currentDefaultOutputLabel()
+      if (label && defaultOutLabel && label !== defaultOutLabel) {
+        defaultOutLabel = label
+        await reacquireSystemAudio()
+      } else if (label && !defaultOutLabel) {
+        defaultOutLabel = label
+      }
+    }, 3000)
+  }
+
   // Per-source loudness timeline for speaker attribution ("Me" vs "Them").
   // Only meaningful in virtual mode where mic and system audio are separate.
   const energy: EnergySample[] = []
@@ -195,6 +253,7 @@ export async function startRecording(mode: RecordingMode): Promise<RecorderHandl
   async function teardown(): Promise<void> {
     stopped = true
     if (energyTimer) clearInterval(energyTimer)
+    if (deviceWatch) clearInterval(deviceWatch)
     try {
       await reader.cancel()
     } catch {

@@ -1,5 +1,6 @@
 import { app } from 'electron'
 import { spawn } from 'child_process'
+import { cpus } from 'os'
 import {
   existsSync,
   mkdirSync,
@@ -166,10 +167,13 @@ export async function transcribe(
   if (!existsSync(mp)) throw new Error(`Speech model ${model} is not downloaded yet`)
 
   const outBase = wavFile.replace(/\.wav$/i, '')
+  // whisper-cli defaults to 4 threads; use most of the machine (leave headroom
+  // so the app and the user's meeting software stay responsive)
+  const threads = Math.max(4, Math.min(12, cpus().length - 4))
   await new Promise<void>((resolve, reject) => {
     const p = spawn(
       binary,
-      ['-m', mp, '-f', wavFile, '-oj', '-of', outBase, '-l', 'en', '--print-progress'],
+      ['-m', mp, '-f', wavFile, '-oj', '-of', outBase, '-l', 'en', '-t', String(threads), '--print-progress'],
       { windowsHide: true }
     )
     let stderr = ''
