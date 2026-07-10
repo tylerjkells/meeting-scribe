@@ -6,28 +6,28 @@ export function summaryToMarkdown(meeting: Meeting): string {
   const lines: string[] = [`# ${meeting.title}`, '', `${formatWhen(meeting.createdAt)} · ${formatDuration(meeting.durationMs)} · ${meeting.mode === 'virtual' ? 'virtual' : 'in person'}`, '']
   if (s) {
     lines.push('## TL;DR', '', s.tldr, '')
-    for (const topic of s.topics ?? []) {
-      lines.push(`## ${topic.heading}`, '', ...topic.notes.map((n) => `- ${n}`), '')
-    }
-    if (!s.topics && s.keyPoints?.length) {
-      lines.push('## Key points', '', ...s.keyPoints.map((p) => `- ${p}`), '')
-    }
-    if (s.decisions.length) {
-      lines.push('## Decisions', '', ...s.decisions.map((d) => `- ${d}`), '')
-    }
     if (s.actionItems.length) {
       lines.push(
         '## Action items',
         '',
         ...s.actionItems.map((a) => {
           const who = a.owner ? ` (${a.owner}${a.due ? `, due ${a.due}` : ''})` : a.due ? ` (due ${a.due})` : ''
-          return `- [ ] ${a.task}${who}`
+          return `- [${a.done ? 'x' : ' '}] ${a.task}${who}`
         }),
         ''
       )
     }
+    if (s.decisions.length) {
+      lines.push('## Decisions', '', ...s.decisions.map((d) => `- ${d}`), '')
+    }
     if (s.openQuestions.length) {
       lines.push('## Open questions', '', ...s.openQuestions.map((q) => `- ${q}`), '')
+    }
+    for (const topic of s.topics ?? []) {
+      lines.push(`## ${topic.heading}`, '', ...topic.notes.map((n) => `- ${n}`), '')
+    }
+    if (!s.topics && s.keyPoints?.length) {
+      lines.push('## Key points', '', ...s.keyPoints.map((p) => `- ${p}`), '')
     }
   }
   return lines.join('\n')

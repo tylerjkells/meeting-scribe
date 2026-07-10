@@ -326,36 +326,6 @@ export function MeetingView({
 
       {meeting.summary && (
         <>
-          {meeting.summary.topics?.map((topic, ti) => (
-            <Collapse label={topic.heading} topic key={ti}>
-              <ul className="point-list">
-                {topic.notes.map((n, i) => (
-                  <li key={i}>{n}</li>
-                ))}
-              </ul>
-            </Collapse>
-          ))}
-
-          {!meeting.summary.topics && (meeting.summary.keyPoints?.length ?? 0) > 0 && (
-            <Collapse label="Key points">
-              <ul className="point-list">
-                {meeting.summary.keyPoints!.map((p, i) => (
-                  <li key={i}>{p}</li>
-                ))}
-              </ul>
-            </Collapse>
-          )}
-
-          {meeting.summary.decisions.length > 0 && (
-            <Collapse label="Decisions">
-              <ul className="point-list">
-                {meeting.summary.decisions.map((d, i) => (
-                  <li key={i}>{d}</li>
-                ))}
-              </ul>
-            </Collapse>
-          )}
-
           {meeting.summary.actionItems.length > 0 && (
             <Collapse label="Action items" meta={`${meeting.summary.actionItems.length}`}>
               <div>
@@ -380,11 +350,41 @@ export function MeetingView({
             </Collapse>
           )}
 
+          {meeting.summary.decisions.length > 0 && (
+            <Collapse label="Decisions">
+              <ul className="point-list">
+                {meeting.summary.decisions.map((d, i) => (
+                  <li key={i}>{d}</li>
+                ))}
+              </ul>
+            </Collapse>
+          )}
+
           {meeting.summary.openQuestions.length > 0 && (
             <Collapse label="Open questions">
               <ul className="point-list">
                 {meeting.summary.openQuestions.map((q, i) => (
                   <li key={i}>{q}</li>
+                ))}
+              </ul>
+            </Collapse>
+          )}
+
+          {meeting.summary.topics?.map((topic, ti) => (
+            <Collapse label={topic.heading} topic key={ti}>
+              <ul className="point-list">
+                {topic.notes.map((n, i) => (
+                  <li key={i}>{n}</li>
+                ))}
+              </ul>
+            </Collapse>
+          ))}
+
+          {!meeting.summary.topics && (meeting.summary.keyPoints?.length ?? 0) > 0 && (
+            <Collapse label="Key points">
+              <ul className="point-list">
+                {meeting.summary.keyPoints!.map((p, i) => (
+                  <li key={i}>{p}</li>
                 ))}
               </ul>
             </Collapse>

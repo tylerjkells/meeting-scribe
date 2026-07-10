@@ -101,7 +101,8 @@ export async function summarizeMeeting(id: string): Promise<void> {
   meeting = update(meeting, { stage: 'summarizing', error: undefined })
   try {
     const summary = await summarizeTranscript(transcript, settings.claudeModel)
-    const keepUserTitle = meeting.title && !/^(Virtual meeting|Meeting) · /.test(meeting.title)
+    const keepUserTitle =
+      meeting.title && !/^(Virtual meeting|Imported meeting|Meeting) · /.test(meeting.title)
     update(meeting, {
       summary,
       title: keepUserTitle ? meeting.title : summary.title,
