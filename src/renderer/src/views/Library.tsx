@@ -182,6 +182,15 @@ function CalendarView({
     return new Date(now.getFullYear(), now.getMonth(), 1)
   })
   const [events, setEvents] = useState<CalendarEvent[]>([])
+  const [showSchedule, setShowSchedule] = useState(
+    () => localStorage.getItem('calSchedule') !== 'off'
+  )
+
+  function toggleSchedule(): void {
+    const next = !showSchedule
+    setShowSchedule(next)
+    localStorage.setItem('calSchedule', next ? 'on' : 'off')
+  }
 
   const byDay = useMemo(() => {
     const map = new Map<string, MeetingListItem[]>()
@@ -210,6 +219,10 @@ function CalendarView({
 
   // scheduled calendar events for the visible grid (when a feed is connected)
   useEffect(() => {
+    if (!showSchedule) {
+      setEvents([])
+      return
+    }
     let alive = true
     const from = days[0]
     const to = new Date(days[days.length - 1].getTime() + 86400000)
@@ -219,7 +232,7 @@ function CalendarView({
     return () => {
       alive = false
     }
-  }, [days])
+  }, [days, showSchedule])
 
   const eventsByDay = useMemo(() => {
     const map = new Map<string, CalendarEvent[]>()
@@ -248,6 +261,19 @@ function CalendarView({
       <div className="calendar-nav">
         <span className="calendar-month">{monthLabel}</span>
         <div className="calendar-nav-btns">
+          <button
+            className={`who-chip ${showSchedule ? 'active' : ''}`}
+            role="switch"
+            aria-checked={showSchedule}
+            title={
+              showSchedule
+                ? 'Showing your full schedule — click for recordings only'
+                : 'Showing recordings only — click to include your full schedule'
+            }
+            onClick={toggleSchedule}
+          >
+            Schedule
+          </button>
           <button className="btn btn-ghost" onClick={() => shift(-1)} aria-label="Previous month">
             ‹
           </button>
