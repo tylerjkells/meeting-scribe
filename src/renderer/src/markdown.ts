@@ -42,8 +42,9 @@ export function meetingToMarkdown(meeting: Meeting): string {
     }
     lines.push('## Transcript', '')
     for (const seg of meeting.transcript) {
-      const who = seg.speaker ? `${names[seg.speaker]}: ` : ''
-      lines.push(`**[${formatDuration(seg.from)}]** ${who}${seg.text}`)
+      const label =
+        seg.speaker === 'me' ? names.me : seg.speaker === 'them' ? names.them : seg.speaker
+      lines.push(`**[${formatDuration(seg.from)}]** ${label ? `${label}: ` : ''}${seg.text}`)
       lines.push('')
     }
   }

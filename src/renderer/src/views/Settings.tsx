@@ -17,7 +17,12 @@ const THEMES: { id: AppTheme; title: string; desc: string; bg: string; accent: s
 const WHISPER_MODELS: { id: WhisperModel; title: string; desc: string }[] = [
   { id: 'base.en', title: 'Base', desc: 'Fastest, ~140 MB. Fine for clear audio.' },
   { id: 'small.en', title: 'Small', desc: 'Recommended: good accuracy, ~470 MB.' },
-  { id: 'medium.en', title: 'Medium', desc: 'Most accurate, ~1.5 GB, slower.' }
+  { id: 'medium.en', title: 'Medium', desc: 'Most accurate, ~1.5 GB, slower.' },
+  {
+    id: 'small.en-tdrz',
+    title: 'Small + speaker turns',
+    desc: 'Experimental: marks where the speaker changes for cleaner labels. ~470 MB.'
+  }
 ]
 
 const CLAUDE_MODELS = [

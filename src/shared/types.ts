@@ -14,8 +14,13 @@ export interface TranscriptSegment {
   /** end time in ms */
   to: number
   text: string
-  /** which audio source dominated this segment (virtual meetings only) */
-  speaker?: 'me' | 'them'
+  /**
+   * who spoke: 'me'/'them' from audio-source labeling, or a display name
+   * (e.g. "Priya") once speakers have been identified
+   */
+  speaker?: string
+  /** tinydiarize: the speaker changes after this segment */
+  turn?: boolean
 }
 
 /** periodic per-source loudness sample captured while recording */
@@ -198,7 +203,7 @@ export interface PersonProfile {
   myCommitments: ActionRollupItem[]
 }
 
-export type WhisperModel = 'base.en' | 'small.en' | 'medium.en'
+export type WhisperModel = 'base.en' | 'small.en' | 'medium.en' | 'small.en-tdrz'
 
 export type AppTheme = 'studio' | 'rowan' | 'slate' | 'paper'
 

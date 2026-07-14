@@ -71,6 +71,17 @@ const SUMMARY_SCHEMA = {
   additionalProperties: false
 } as const
 
+/** 'me'/'them' resolve through the meeting's speaker names; identified speakers are already names */
+function speakerLabel(
+  speaker: string | undefined,
+  names: { me: string; them: string }
+): string | null {
+  if (!speaker) return null
+  if (speaker === 'me') return names.me
+  if (speaker === 'them') return names.them
+  return speaker
+}
+
 export function transcriptToText(
   segments: TranscriptSegment[],
   names: { me: string; them: string } = { me: 'Me', them: 'Them' }
@@ -80,8 +91,8 @@ export function transcriptToText(
       const totalSec = Math.floor(s.from / 1000)
       const m = Math.floor(totalSec / 60)
       const sec = String(totalSec % 60).padStart(2, '0')
-      const who = s.speaker ? `${names[s.speaker]}: ` : ''
-      return `[${m}:${sec}] ${who}${s.text}`
+      const label = speakerLabel(s.speaker, names)
+      return `[${m}:${sec}] ${label ? `${label}: ` : ''}${s.text}`
     })
     .join('\n')
 }
@@ -113,7 +124,7 @@ export async function summarizeTranscript(
     system:
       'You summarize meeting transcripts produced by automatic speech recognition. ' +
       'The transcript comes from automatic speech recognition and may contain errors; infer meaning from context and do not invent facts that are not supported by the transcript. ' +
-      'Lines labeled "Me" were spoken by the person you are summarizing for; lines labeled "Them" are the other participants (possibly several people). Unlabeled lines could be anyone. ' +
+      'Lines labeled "Me" were spoken by the person you are summarizing for; lines labeled "Them" are the other participants (possibly several people); lines may also carry specific speaker names. Unlabeled lines could be anyone. ' +
       'Write for the meeting participant reviewing this later: concrete, specific, no filler. ' +
       'Group the discussion into topical sections the way good meeting minutes do: when the conversation jumps between subjects, give each subject its own section with a short heading, and put the substance in the notes (numbers, names, formats, reasons), not vague paraphrase.' +
       attendeeNote +

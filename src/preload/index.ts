@@ -88,6 +88,8 @@ const api = {
       ipcRenderer.invoke('meetings:exportMarkdown', defaultName, content),
     ask: (id: string, question: string): Promise<string> =>
       ipcRenderer.invoke('meetings:ask', id, question),
+    identifySpeakers: (id: string): Promise<Meeting | null> =>
+      ipcRenderer.invoke('meetings:identifySpeakers', id),
     setSpeakers: (id: string, names: { me: string; them: string }): Promise<Meeting | null> =>
       ipcRenderer.invoke('meetings:setSpeakers', id, names),
     import: (title: string, dateIso: string, text: string): Promise<Meeting> =>

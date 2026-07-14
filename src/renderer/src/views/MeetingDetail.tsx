@@ -189,6 +189,9 @@ export function MeetingView({
   const [exportedTo, setExportedTo] = useState<string | null>(null)
   const [emailDraft, setEmailDraft] = useState<{ subject: string; body: string } | null>(null)
   const [knownOwners, setKnownOwners] = useState<string[]>([])
+  const [hasApiKey, setHasApiKey] = useState(false)
+  const [identifying, setIdentifying] = useState(false)
+  const [identifyError, setIdentifyError] = useState<string | null>(null)
   const [playheadMs, setPlayheadMs] = useState(-1)
   const playerRef = useRef<PlayerControl | null>(null)
   const titleRef = useRef<HTMLInputElement>(null)
@@ -205,6 +208,7 @@ export function MeetingView({
       ([settings, items]) => {
         const seen = items.map((i) => i.owner).filter((o): o is string => !!o)
         setKnownOwners([...new Set(['Me', ...settings.people, ...seen])])
+        setHasApiKey(settings.hasApiKey)
       }
     )
   }, [id])
@@ -537,17 +541,49 @@ export function MeetingView({
           </button>
           {transcriptOpen && (
             <div className="collapse-body">
-              {meeting.transcript.some((s) => s.speaker) && (
-                <SpeakerNames meeting={meeting} onSaved={setMeeting} />
-              )}
+              <div className="transcript-tools">
+                {meeting.transcript.some((s) => s.speaker === 'me' || s.speaker === 'them') && (
+                  <SpeakerNames meeting={meeting} onSaved={setMeeting} />
+                )}
+                {hasApiKey && (
+                  <button
+                    className="btn transcript-identify"
+                    disabled={identifying}
+                    title="Attribute lines to named speakers from conversational context (uses Claude, costs a few cents)"
+                    onClick={async () => {
+                      setIdentifying(true)
+                      setIdentifyError(null)
+                      try {
+                        const updated = await window.scribe.meetings.identifySpeakers(meeting.id)
+                        if (updated) setMeeting(updated)
+                      } catch (err) {
+                        setIdentifyError(
+                          err instanceof Error ? err.message : 'Speaker identification failed.'
+                        )
+                      } finally {
+                        setIdentifying(false)
+                      }
+                    }}
+                  >
+                    {identifying ? 'Identifying…' : 'Identify speakers'}
+                  </button>
+                )}
+                {identifyError && (
+                  <span className="field-note error" role="alert">
+                    {identifyError}
+                  </span>
+                )}
+              </div>
               <div className="transcript">
                 {meeting.transcript.map((seg, i) => {
                   const prev = meeting.transcript![i - 1]
                   const showChip = seg.speaker && seg.speaker !== prev?.speaker
-                  const names = {
-                    me: meeting.speakerNames?.me ?? 'Me',
-                    them: meeting.speakerNames?.them ?? 'Them'
-                  }
+                  const label =
+                    seg.speaker === 'me'
+                      ? (meeting.speakerNames?.me ?? 'Me')
+                      : seg.speaker === 'them'
+                        ? (meeting.speakerNames?.them ?? 'Them')
+                        : seg.speaker
                   const active = playheadMs >= seg.from && playheadMs < seg.to
                   const seekable = meeting.hasAudio
                   return (
@@ -561,7 +597,9 @@ export function MeetingView({
                       <span className="transcript-time">{formatDuration(seg.from)}</span>
                       <span className="transcript-text">
                         {showChip && (
-                          <span className={`speaker-chip ${seg.speaker}`}>{names[seg.speaker!]}</span>
+                          <span className={`speaker-chip ${seg.speaker === 'me' ? 'me' : 'them'}`}>
+                            {label}
+                          </span>
                         )}
                         {seg.text}
                       </span>

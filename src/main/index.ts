@@ -34,6 +34,7 @@ import { briefForEvent } from './brief'
 import { listPeople, personProfile } from './people'
 import { buildDigest } from './digest'
 import { seriesSiblings, seriesData } from './series'
+import { identifySpeakers } from './identify'
 import { engineStatus, setupEngine } from './whisper'
 import { processMeeting, summarizeMeeting } from './pipeline'
 import { askAboutMeeting, testApiKey } from './summarize'
@@ -44,6 +45,7 @@ import type {
   ActionRollupItem,
   AppSettings,
   EnergySample,
+  Meeting,
   RecordingMode,
   WhisperModel
 } from '../shared/types'
@@ -350,6 +352,24 @@ function registerIpc(): void {
       return m
     }
   )
+
+  ipcMain.handle('meetings:identifySpeakers', async (_e, id: string): Promise<Meeting | null> => {
+    const meeting = readMeeting(id)
+    if (!meeting) throw new Error('Meeting not found')
+    const transcript = await identifySpeakers(meeting)
+    meeting.transcript = transcript
+    // real names discovered here feed the team directory
+    for (const name of new Set(transcript.map((s) => s.speaker))) {
+      if (name && name !== 'me' && name !== 'them' && !/^speaker \d+$/i.test(name)) {
+        addPerson(name)
+      }
+    }
+    writeMeeting(meeting)
+    for (const win of BrowserWindow.getAllWindows()) {
+      win.webContents.send('meeting:updated', meeting)
+    }
+    return meeting
+  })
 
   ipcMain.handle('meetings:ask', async (_e, id: string, question: string): Promise<string> => {
     const meeting = readMeeting(id)

@@ -243,27 +243,46 @@ async function pcmToWav(rawPath: string, dest: string, bytes: number): Promise<v
 }
 
 /**
- * Attribute each transcript segment to "me" (mic) or "them" (system audio)
- * using the per-source loudness timeline captured while recording.
+ * Attribute transcript segments to "me" (mic) or "them" (system audio) using
+ * the per-source loudness timeline captured while recording. When tinydiarize
+ * marked speaker turns, whole turns are labeled from their aggregate energy,
+ * which is far more stable than per-segment labeling.
  */
 export function labelSpeakers(id: string, segments: TranscriptSegment[]): void {
   const path = energyPath(id)
   if (!existsSync(path)) return
   try {
     const samples = JSON.parse(readFileSync(path, 'utf-8')) as EnergySample[]
+
+    // group segments into speaker turns; without turn markers every segment
+    // is its own group, which is the old per-segment behavior
+    const groups: TranscriptSegment[][] = []
+    let current: TranscriptSegment[] = []
     for (const seg of segments) {
+      current.push(seg)
+      if (seg.turn) {
+        groups.push(current)
+        current = []
+      }
+    }
+    if (current.length) groups.push(current)
+
+    for (const group of groups) {
+      const from = group[0].from
+      const to = group[group.length - 1].to
       let mic = 0
       let sys = 0
       let n = 0
       for (const smp of samples) {
-        if (smp.t >= seg.from && smp.t <= seg.to) {
+        if (smp.t >= from && smp.t <= to) {
           mic += smp.mic
           sys += smp.sys
           n++
         }
       }
       if (n === 0 || mic + sys < 0.01) continue
-      seg.speaker = mic >= sys ? 'me' : 'them'
+      const speaker = mic >= sys ? 'me' : 'them'
+      for (const seg of group) seg.speaker = speaker
     }
   } catch {
     // unreadable timeline: ship the transcript unlabeled

@@ -51,8 +51,13 @@ usable in meetings that touch student data.
 
 ## 4. Capture fidelity
 
-- [ ] **Real speaker diarization** — per-speaker labels beyond the current mic/system-audio
-      split, with name assignment; in-person meetings gain speakers for the first time.
+- [x] **Speaker diarization** (two layers, both opt-in, v0.7.0 — *needs on-device testing*):
+      a "Small + speaker turns" transcription engine option (whisper.cpp tinydiarize) marks
+      speaker-change boundaries, which also makes mic/system labeling turn-accurate; and an
+      "Identify speakers" button on the transcript attributes lines to named people from
+      conversational context via Claude (uses attendee/directory spellings, feeds discovered
+      names back to the directory). True voice-print clustering stays out of scope — it needs
+      an ML stack that doesn't bundle sanely into a local app.
 - [x] **Vocabulary hints** — a user glossary in Settings (names, acronyms, program names) fed
       to Whisper as a decoding prompt (whole-file and live chunks) and to the summarizer as a
       spelling glossary (v0.7.0).
