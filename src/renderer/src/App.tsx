@@ -7,12 +7,14 @@ import { MeetingView } from './views/MeetingDetail'
 import { SettingsView } from './views/Settings'
 import { ActionsView } from './views/Actions'
 import { ImportView } from './views/Import'
-import { MicIcon, ListIcon, GearIcon, CheckIcon, formatDuration } from './ui'
+import { AskView } from './views/Ask'
+import { MicIcon, ListIcon, GearIcon, CheckIcon, SparkIcon, formatDuration } from './ui'
 
 export type View =
   | { name: 'library' }
   | { name: 'record' }
   | { name: 'meeting'; id: string }
+  | { name: 'ask' }
   | { name: 'actions' }
   | { name: 'import' }
   | { name: 'settings' }
@@ -76,6 +78,12 @@ export default function App(): React.JSX.Element {
           onClick={() => setView({ name: 'library' })}
         >
           <ListIcon /> Meetings
+        </button>
+        <button
+          className={`nav-btn ${view.name === 'ask' ? 'active' : ''}`}
+          onClick={() => setView({ name: 'ask' })}
+        >
+          <SparkIcon /> Ask
         </button>
         <button
           className={`nav-btn ${view.name === 'actions' ? 'active' : ''}`}
@@ -154,6 +162,7 @@ export default function App(): React.JSX.Element {
               }}
             />
           )}
+          {view.name === 'ask' && <AskView onOpen={openMeeting} />}
           {view.name === 'actions' && <ActionsView onOpen={openMeeting} />}
           {view.name === 'import' && (
             <ImportView

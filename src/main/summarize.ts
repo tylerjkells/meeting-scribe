@@ -71,7 +71,7 @@ const SUMMARY_SCHEMA = {
   additionalProperties: false
 } as const
 
-function transcriptToText(
+export function transcriptToText(
   segments: TranscriptSegment[],
   names: { me: string; them: string } = { me: 'Me', them: 'Them' }
 ): string {
