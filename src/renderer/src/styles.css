@@ -429,11 +429,17 @@ button:disabled {
 
 .empty-state p {
   max-width: 44ch;
-  margin: 0 auto var(--s6);
+  margin: 0 auto;
 }
 
 .empty-state .btn-primary {
+  margin-top: var(--s5);
   padding: 10px 22px;
+}
+
+/* beats the `.empty-state p` margin reset above (higher specificity) */
+.empty-state p.empty-alt {
+  margin-top: var(--s4);
 }
 
 /* ---------- record view ---------- */
@@ -1545,7 +1551,6 @@ input[type='date'] {
 }
 
 .empty-alt {
-  margin-top: var(--s7);
   font-size: 13px;
   color: var(--ink-faint);
 }
