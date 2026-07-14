@@ -600,26 +600,36 @@ function EmailDraft({
           Close
         </button>
       </div>
-      <div className="field-row">
-        <input
-          className="text-input"
-          value={draft.subject}
-          onChange={(e) => onChange({ ...draft, subject: e.target.value })}
-          aria-label="Email subject"
-        />
-        <button className="btn" onClick={() => copy('subject')}>
-          {copiedWhat === 'subject' ? 'Copied ✓' : 'Copy subject'}
-        </button>
+      <div>
+        <label className="field-label" htmlFor="email-draft-subject">
+          Subject
+        </label>
+        <div className="field-row">
+          <input
+            id="email-draft-subject"
+            className="text-input"
+            value={draft.subject}
+            onChange={(e) => onChange({ ...draft, subject: e.target.value })}
+          />
+          <button className="btn email-copy-btn" onClick={() => copy('subject')}>
+            {copiedWhat === 'subject' ? 'Copied ✓' : 'Copy subject'}
+          </button>
+        </div>
       </div>
-      <textarea
-        className="text-input email-draft-body"
-        value={draft.body}
-        onChange={(e) => onChange({ ...draft, body: e.target.value })}
-        aria-label="Email body"
-      />
+      <div>
+        <label className="field-label" htmlFor="email-draft-body">
+          Body
+        </label>
+        <textarea
+          id="email-draft-body"
+          className="text-input email-draft-body"
+          value={draft.body}
+          onChange={(e) => onChange({ ...draft, body: e.target.value })}
+        />
+      </div>
       <div className="email-draft-actions">
         <span className="opt-desc">Edit freely, then paste into a new email.</span>
-        <button className="btn btn-primary" onClick={() => copy('body')}>
+        <button className="btn email-copy-btn" onClick={() => copy('body')}>
           {copiedWhat === 'body' ? 'Copied ✓' : 'Copy body'}
         </button>
       </div>

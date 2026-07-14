@@ -1909,10 +1909,19 @@ select.text-input {
 }
 
 .email-draft-body {
-  min-height: 220px;
+  min-height: 240px;
   resize: vertical;
   font-size: 13px;
   line-height: 1.6;
+}
+
+/* equal-height, fixed-width copy buttons that never wrap or resize on
+   the "Copied ✓" state */
+.email-copy-btn {
+  flex: none;
+  white-space: nowrap;
+  min-width: 122px;
+  text-align: center;
 }
 
 .email-draft-actions {
