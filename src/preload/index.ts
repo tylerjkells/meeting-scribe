@@ -13,6 +13,7 @@ import type {
   PersonProfile,
   PersonSummary,
   RecordingMode,
+  SeriesData,
   TranscriptSegment,
   WeeklyDigest,
   WhisperModel
@@ -125,6 +126,11 @@ const api = {
   },
   digest: {
     build: (): Promise<WeeklyDigest> => ipcRenderer.invoke('digest:build')
+  },
+  series: {
+    siblings: (meetingId: string): Promise<string[]> =>
+      ipcRenderer.invoke('series:siblings', meetingId),
+    get: (title: string): Promise<SeriesData> => ipcRenderer.invoke('series:get', title)
   },
   people: {
     list: (): Promise<PersonSummary[]> => ipcRenderer.invoke('people:list'),

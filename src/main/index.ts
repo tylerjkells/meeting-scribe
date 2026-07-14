@@ -33,6 +33,7 @@ import { startRecordNudge } from './nudge'
 import { briefForEvent } from './brief'
 import { listPeople, personProfile } from './people'
 import { buildDigest } from './digest'
+import { seriesSiblings, seriesData } from './series'
 import { engineStatus, setupEngine } from './whisper'
 import { processMeeting, summarizeMeeting } from './pipeline'
 import { askAboutMeeting, testApiKey } from './summarize'
@@ -396,6 +397,10 @@ function registerIpc(): void {
   ipcMain.handle('ask:clear', () => clearAskHistory())
 
   ipcMain.handle('digest:build', () => buildDigest())
+
+  // --- meeting series ---
+  ipcMain.handle('series:siblings', (_e, meetingId: string) => seriesSiblings(meetingId))
+  ipcMain.handle('series:get', (_e, title: string) => seriesData(title))
 
   // --- person pages ---
   ipcMain.handle('people:list', () => listPeople())

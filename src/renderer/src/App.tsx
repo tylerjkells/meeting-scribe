@@ -9,6 +9,7 @@ import { ActionsView } from './views/Actions'
 import { ImportView } from './views/Import'
 import { TodayView } from './views/Today'
 import { PeopleView, PersonView } from './views/People'
+import { SeriesView } from './views/Series'
 import { AskWidget } from './AskWidget'
 import { Digest } from './Digest'
 import { MicIcon, ListIcon, GearIcon, CheckIcon, TodayIcon, UsersIcon, formatDuration } from './ui'
@@ -21,6 +22,7 @@ export type View =
   | { name: 'actions' }
   | { name: 'people' }
   | { name: 'person'; person: string }
+  | { name: 'series'; title: string }
   | { name: 'import' }
   | { name: 'settings' }
 
@@ -144,7 +146,12 @@ export default function App(): React.JSX.Element {
 
       <main
         className="main"
-        key={view.name + ('id' in view ? view.id : '') + ('person' in view ? view.person : '')}
+        key={
+          view.name +
+          ('id' in view ? view.id : '') +
+          ('person' in view ? view.person : '') +
+          ('title' in view ? view.title : '')
+        }
       >
         <div className="view-enter" style={{ height: view.name === 'record' ? '100%' : undefined }}>
           {view.name === 'today' && (
@@ -189,6 +196,14 @@ export default function App(): React.JSX.Element {
                 refreshMeetings()
                 setView({ name: 'library' })
               }}
+              onOpenSeries={(title) => setView({ name: 'series', title })}
+            />
+          )}
+          {view.name === 'series' && (
+            <SeriesView
+              title={view.title}
+              onBack={() => setView({ name: 'library' })}
+              onOpenMeeting={openMeeting}
             />
           )}
           {view.name === 'actions' && <ActionsView onOpen={openMeeting} />}

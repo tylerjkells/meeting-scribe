@@ -9,6 +9,7 @@ Record, transcribe, and AI-summarize your meetings — locally, privately, and w
 - **Action items rollup** — every follow-up across all meetings in one checklist, with done-tracking.
 - **People** — a page per colleague: every meeting together, everything they own, and everything you owe them, assembled automatically from owners, attendees, and named speakers.
 - **Weekly digest** — a Monday prompt with last week's meetings, your open items, anything languishing 2+ weeks, and who owes what.
+- **Meeting series** — recurring meetings self-assemble into threads (recordings inherit their calendar event's title): decisions over time, everything still open across the series, and the full occurrence history.
 - **Today view** — the home screen shows today's calendar (connect any Outlook/Google calendar via its secret iCal address, read-only), today's recordings, and your open action items. Recordings started during a calendar event are titled after it, and each event carries a pre-meeting brief — what was decided last time, which follow-ups are still open, and unresolved questions — pulled from the most recent related meeting in your library.
 - **Record nudge** — a system notification when a calendared meeting starts and nothing is recording, so you never lose a meeting to a forgotten record button. One click lands you on the Record page.
 - **Follow-up email** — one click drafts a recap right in the app (TL;DR, decisions, action items with owners, open questions); edit it, copy it, paste it into any mail client.

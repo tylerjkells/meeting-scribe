@@ -1853,6 +1853,63 @@ select.text-input {
   margin-bottom: var(--s2);
 }
 
+/* ---------- meeting series ---------- */
+
+.series-chip {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line-soft);
+  background: var(--bg-raised);
+  color: var(--ink-soft);
+  transition:
+    border-color var(--t-fast) var(--ease-out),
+    color var(--t-fast) var(--ease-out);
+}
+
+.series-chip:hover {
+  border-color: var(--accent-dim);
+  color: var(--ink);
+}
+
+.series-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+
+.series-entry {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: var(--s4);
+  align-items: start;
+}
+
+.series-date {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-faint);
+  text-align: left;
+  padding: 2px 0;
+  border-radius: 4px;
+  transition: color var(--t-fast) var(--ease-out);
+}
+
+.series-date:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.series-points {
+  font-size: 13px;
+}
+
+.series-owner {
+  cursor: default;
+}
+
 /* ---------- weekly digest ---------- */
 
 .digest-prompt {

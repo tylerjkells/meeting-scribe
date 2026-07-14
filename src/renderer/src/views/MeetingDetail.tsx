@@ -171,13 +171,15 @@ export function MeetingView({
   id,
   focusMs,
   onBack,
-  onDeleted
+  onDeleted,
+  onOpenSeries
 }: {
   id: string
   /** transcript moment to scroll to and highlight (from an Ask citation) */
   focusMs?: number
   onBack: () => void
   onDeleted: () => void
+  onOpenSeries: (title: string) => void
 }): React.JSX.Element {
   const [meeting, setMeeting] = useState<Meeting | null>(null)
   const [flashIdx, setFlashIdx] = useState<number | null>(null)
@@ -191,6 +193,12 @@ export function MeetingView({
   const playerRef = useRef<PlayerControl | null>(null)
   const titleRef = useRef<HTMLInputElement>(null)
   const [confirmEl, confirm] = useConfirm()
+  const [seriesCount, setSeriesCount] = useState(0)
+
+  useEffect(() => {
+    setSeriesCount(0)
+    window.scribe.series.siblings(id).then((sibs) => setSeriesCount(sibs.length))
+  }, [id, meeting?.title]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     Promise.all([window.scribe.settings.get(), window.scribe.actions.list()]).then(
@@ -334,6 +342,15 @@ export function MeetingView({
               with {meeting.attendees.slice(0, 3).join(', ')}
               {meeting.attendees.length > 3 ? ` +${meeting.attendees.length - 3}` : ''}
             </span>
+          )}
+          {seriesCount > 0 && (
+            <button
+              className="series-chip"
+              onClick={() => onOpenSeries(meeting.title)}
+              title="See this series: decisions over time and everything still open"
+            >
+              Series · {seriesCount + 1} meetings
+            </button>
           )}
           <StageBadge stage={meeting.stage} progress={meeting.progress} />
         </div>

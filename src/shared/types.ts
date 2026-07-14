@@ -149,6 +149,17 @@ export interface EventBrief {
   openQuestions: string[]
 }
 
+/** a recurring meeting thread: everything sharing one title */
+export interface SeriesData {
+  title: string
+  /** newest first */
+  occurrences: { id: string; title: string; createdAt: string; durationMs: number; tldr?: string }[]
+  /** decisions grouped by occurrence, newest first */
+  decisions: { meetingId: string; createdAt: string; items: string[] }[]
+  /** open action items across the whole series */
+  openActions: ActionRollupItem[]
+}
+
 /** the Monday-morning rollup */
 export interface WeeklyDigest {
   /** e.g. "July 14" (the day the digest was generated) */
