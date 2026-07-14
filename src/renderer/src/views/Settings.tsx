@@ -17,7 +17,12 @@ const THEMES: { id: AppTheme; title: string; desc: string; bg: string; accent: s
 const WHISPER_MODELS: { id: WhisperModel; title: string; desc: string }[] = [
   { id: 'base.en', title: 'Base', desc: 'Fastest, ~140 MB. Fine for clear audio.' },
   { id: 'small.en', title: 'Small', desc: 'Recommended: good accuracy, ~470 MB.' },
-  { id: 'medium.en', title: 'Medium', desc: 'Most accurate, ~1.5 GB, slower.' }
+  { id: 'medium.en', title: 'Medium', desc: 'Most accurate, ~1.5 GB, slower.' },
+  {
+    id: 'small.en-tdrz',
+    title: 'Small + speaker turns',
+    desc: 'Experimental: marks where the speaker changes for cleaner labels. ~470 MB.'
+  }
 ]
 
 const CLAUDE_MODELS = [
@@ -74,6 +79,7 @@ export function SettingsView({
   const [dlProgress, setDlProgress] = useState<EngineProgress | null>(null)
   const [downloading, setDownloading] = useState<WhisperModel | null>(null)
   const [personDraft, setPersonDraft] = useState('')
+  const [vocabDraft, setVocabDraft] = useState(settings.vocabulary)
   const [calDraft, setCalDraft] = useState('')
   const [calStatus, setCalStatus] = useState<{ ok: boolean; msg: string } | null>(null)
   const [connectingCal, setConnectingCal] = useState(false)
@@ -319,6 +325,27 @@ export function SettingsView({
               </div>
             </div>
           )}
+          <div>
+            <label className="field-label" htmlFor="vocab-hints">
+              Vocabulary hints
+            </label>
+            <textarea
+              id="vocab-hints"
+              className="text-input vocab-input"
+              placeholder="Banner, Slate, Canvas, Rowan Global, Dr. Okafor, NJWELL…"
+              value={vocabDraft}
+              onChange={(e) => setVocabDraft(e.target.value)}
+              onBlur={async () => {
+                if (vocabDraft.trim() !== settings.vocabulary) {
+                  onChange(await window.scribe.settings.update({ vocabulary: vocabDraft }))
+                }
+              }}
+            />
+            <p className="opt-desc">
+              Names, acronyms, and jargon that speech recognition tends to mangle. Applied to
+              future transcriptions and summaries.
+            </p>
+          </div>
         </div>
       </section>
 
@@ -478,6 +505,21 @@ export function SettingsView({
 
       <section className="settings-section">
         <header className="settings-label">
+          <h2>Privacy</h2>
+        </header>
+        <div className="settings-body">
+          <p className="opt-desc">
+            Audio is recorded, transcribed, and stored only on this PC — recordings never leave
+            it. Exactly two things ever go over the network: transcript text sent to
+            Anthropic&apos;s Claude API when you summarize or ask questions (not used to train
+            models under Anthropic&apos;s commercial terms), and read-only fetches of your
+            calendar feed. Delete a meeting and it is gone; there is no cloud copy.
+          </p>
+        </div>
+      </section>
+
+      <section className="settings-section">
+        <header className="settings-label">
           <h2>About</h2>
         </header>
         <div className="settings-body">
@@ -486,8 +528,7 @@ export function SettingsView({
             <a href="https://github.com/tylerjkells/meeting-scribe/releases" target="_blank" rel="noreferrer">
               GitHub releases
             </a>
-            . Nothing leaves this machine except the text sent to Claude for summaries and
-            questions.
+            .
           </p>
         </div>
       </section>

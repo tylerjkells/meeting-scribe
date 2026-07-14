@@ -18,7 +18,10 @@ import type { EngineProgress, EngineStatus, TranscriptSegment, WhisperModel } fr
 const MODEL_URLS: Record<WhisperModel, string> = {
   'base.en': 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin',
   'small.en': 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.en.bin',
-  'medium.en': 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.en.bin'
+  'medium.en': 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.en.bin',
+  // tinydiarize variant: same accuracy class as small.en, plus speaker-turn markers
+  'small.en-tdrz':
+    'https://huggingface.co/akashmjn/tinydiarize-whisper.cpp/resolve/main/ggml-small.en-tdrz.bin'
 }
 
 function engineDir(): string {
@@ -153,6 +156,7 @@ interface WhisperJsonOutput {
   transcription: {
     offsets: { from: number; to: number }
     text: string
+    speaker_turn_next?: boolean
   }[]
 }
 
@@ -193,6 +197,7 @@ export async function transcribeFile(
     '-l', 'en',
     '-t', String(opts.threads ?? defaultThreads())
   ]
+  if (model === 'small.en-tdrz') args.push('--tinydiarize')
   if (opts.prompt) args.push('--prompt', opts.prompt)
   if (opts.onProgress) args.push('--print-progress')
 
@@ -220,14 +225,29 @@ export async function transcribeFile(
   rmSync(jsonPath, { force: true })
 
   return (parsed.transcription ?? [])
-    .map((t) => ({ from: t.offsets.from, to: t.offsets.to, text: t.text.trim() }))
+    .map((t) => ({
+      from: t.offsets.from,
+      to: t.offsets.to,
+      text: t.text.trim(),
+      ...(t.speaker_turn_next === true ? { turn: true } : {})
+    }))
     .filter((t) => t.text.length > 0)
 }
 
 export async function transcribe(
   wavFile: string,
   model: WhisperModel,
-  onProgress: (percent: number) => void
+  onProgress: (percent: number) => void,
+  prompt?: string
 ): Promise<TranscriptSegment[]> {
-  return transcribeFile(wavFile, model, { onProgress })
+  return transcribeFile(wavFile, model, { onProgress, prompt })
+}
+
+/**
+ * User vocabulary (names, acronyms, jargon) shaped into a whisper prompt.
+ * Whisper's prompt window is small, so the list is capped.
+ */
+export function vocabularyPrompt(vocabulary: string): string {
+  const v = vocabulary.trim().replace(/\s+/g, ' ')
+  return v ? v.slice(0, 400) : ''
 }

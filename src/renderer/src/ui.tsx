@@ -230,6 +230,16 @@ export function TodayIcon(): React.JSX.Element {
   )
 }
 
+export function UsersIcon(): React.JSX.Element {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="9" cy="8" r="3.5" />
+      <path d="M2.5 20c.8-3.2 3.4-5 6.5-5s5.7 1.8 6.5 5" />
+      <path d="M16 5.2a3.5 3.5 0 0 1 0 5.6M18.5 15.3c1.6.8 2.6 2.1 3 4.2" />
+    </svg>
+  )
+}
+
 export function SparkIcon(): React.JSX.Element {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

@@ -10,8 +10,12 @@ import type {
   LibraryQA,
   Meeting,
   MeetingListItem,
+  PersonProfile,
+  PersonSummary,
   RecordingMode,
+  SeriesData,
   TranscriptSegment,
+  WeeklyDigest,
   WhisperModel
 } from '../shared/types'
 
@@ -84,6 +88,8 @@ const api = {
       ipcRenderer.invoke('meetings:exportMarkdown', defaultName, content),
     ask: (id: string, question: string): Promise<string> =>
       ipcRenderer.invoke('meetings:ask', id, question),
+    identifySpeakers: (id: string): Promise<Meeting | null> =>
+      ipcRenderer.invoke('meetings:identifySpeakers', id),
     setSpeakers: (id: string, names: { me: string; them: string }): Promise<Meeting | null> =>
       ipcRenderer.invoke('meetings:setSpeakers', id, names),
     import: (title: string, dateIso: string, text: string): Promise<Meeting> =>
@@ -119,6 +125,19 @@ const api = {
     history: (): Promise<LibraryQA[]> => ipcRenderer.invoke('ask:history'),
     ask: (question: string): Promise<LibraryQA> => ipcRenderer.invoke('ask:ask', question),
     clear: (): Promise<void> => ipcRenderer.invoke('ask:clear')
+  },
+  digest: {
+    build: (): Promise<WeeklyDigest> => ipcRenderer.invoke('digest:build')
+  },
+  series: {
+    siblings: (meetingId: string): Promise<string[]> =>
+      ipcRenderer.invoke('series:siblings', meetingId),
+    get: (title: string): Promise<SeriesData> => ipcRenderer.invoke('series:get', title)
+  },
+  people: {
+    list: (): Promise<PersonSummary[]> => ipcRenderer.invoke('people:list'),
+    profile: (name: string): Promise<PersonProfile | null> =>
+      ipcRenderer.invoke('people:profile', name)
   },
   actions: {
     list: (): Promise<ActionRollupItem[]> => ipcRenderer.invoke('actions:list'),

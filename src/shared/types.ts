@@ -14,8 +14,13 @@ export interface TranscriptSegment {
   /** end time in ms */
   to: number
   text: string
-  /** which audio source dominated this segment (virtual meetings only) */
-  speaker?: 'me' | 'them'
+  /**
+   * who spoke: 'me'/'them' from audio-source labeling, or a display name
+   * (e.g. "Priya") once speakers have been identified
+   */
+  speaker?: string
+  /** tinydiarize: the speaker changes after this segment */
+  turn?: boolean
 }
 
 /** periodic per-source loudness sample captured while recording */
@@ -149,7 +154,56 @@ export interface EventBrief {
   openQuestions: string[]
 }
 
-export type WhisperModel = 'base.en' | 'small.en' | 'medium.en'
+/** a recurring meeting thread: everything sharing one title */
+export interface SeriesData {
+  title: string
+  /** newest first */
+  occurrences: { id: string; title: string; createdAt: string; durationMs: number; tldr?: string }[]
+  /** decisions grouped by occurrence, newest first */
+  decisions: { meetingId: string; createdAt: string; items: string[] }[]
+  /** open action items across the whole series */
+  openActions: ActionRollupItem[]
+}
+
+/** the Monday-morning rollup */
+export interface WeeklyDigest {
+  /** e.g. "July 14" (the day the digest was generated) */
+  weekLabel: string
+  lastWeekMeetings: { id: string; title: string; createdAt: string; durationMs: number }[]
+  /** open items assigned to Me, all meetings */
+  myOpen: ActionRollupItem[]
+  /** open items (any owner) from meetings more than two weeks old */
+  aging: ActionRollupItem[]
+  /** open-item counts per colleague */
+  byPerson: { name: string; count: number }[]
+}
+
+/** one row on the People page */
+export interface PersonSummary {
+  name: string
+  meetingCount: number
+  openItems: number
+}
+
+export interface PersonMeetingRef {
+  id: string
+  title: string
+  createdAt: string
+  tldr?: string
+}
+
+/** everything the app knows about one colleague */
+export interface PersonProfile {
+  name: string
+  /** meetings they appeared in (attendee, named speaker, or item owner) */
+  meetings: PersonMeetingRef[]
+  /** action items they own, open and done */
+  items: ActionRollupItem[]
+  /** your own open items from meetings you shared with them */
+  myCommitments: ActionRollupItem[]
+}
+
+export type WhisperModel = 'base.en' | 'small.en' | 'medium.en' | 'small.en-tdrz'
 
 export type AppTheme = 'studio' | 'rowan' | 'slate' | 'paper'
 
@@ -163,6 +217,8 @@ export interface AppSettings {
   /** notify when a calendared meeting starts and nothing is recording */
   recordNudge: boolean
   theme: AppTheme
+  /** names, acronyms, and jargon fed to transcription and summaries */
+  vocabulary: string
   /** team directory: names offered when assigning action items */
   people: string[]
 }

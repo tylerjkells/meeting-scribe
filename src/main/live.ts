@@ -59,7 +59,9 @@ export class LiveTranscriber {
   constructor(
     private dir: string,
     private model: WhisperModel,
-    private onUpdate: (segments: TranscriptSegment[], transcribedMs: number) => void
+    private onUpdate: (segments: TranscriptSegment[], transcribedMs: number) => void,
+    /** user vocabulary prepended to each chunk's decoding context */
+    private vocab: string = ''
   ) {}
 
   feed(chunk: Buffer): void {
@@ -114,7 +116,7 @@ export class LiveTranscriber {
       const threads = this.finished ? defaultThreads() : liveThreads()
       const segs = await transcribeFile(wav, this.model, {
         threads,
-        prompt: this.prevText.slice(-200) || undefined
+        prompt: [this.vocab, this.prevText.slice(-200)].filter(Boolean).join(' ') || undefined
       })
       // whisper pads short chunks to its 30s window; clamp times to real audio
       const chunkMs = (pcm.length / BYTES_PER_SEC) * 1000
