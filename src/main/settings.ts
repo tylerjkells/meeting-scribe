@@ -9,6 +9,7 @@ interface StoredSettings {
   autoSummarize: boolean
   recordNudge: boolean
   theme: AppTheme
+  vocabulary: string
   people: string[]
   /** base64 of safeStorage-encrypted API key */
   apiKeyEncrypted: string | null
@@ -22,6 +23,7 @@ const DEFAULTS: StoredSettings = {
   autoSummarize: true,
   recordNudge: true,
   theme: 'studio',
+  vocabulary: '',
   people: [],
   apiKeyEncrypted: null,
   calendarUrlEncrypted: null
@@ -60,6 +62,7 @@ export function getSettings(): AppSettings {
     autoSummarize: s.autoSummarize,
     recordNudge: s.recordNudge !== false,
     theme: s.theme ?? 'studio',
+    vocabulary: s.vocabulary ?? '',
     people: s.people ?? [],
     hasApiKey: !!s.apiKeyEncrypted,
     hasCalendar: !!s.calendarUrlEncrypted
@@ -70,7 +73,13 @@ export function updateSettings(
   patch: Partial<
     Pick<
       AppSettings,
-      'whisperModel' | 'claudeModel' | 'autoSummarize' | 'recordNudge' | 'theme' | 'people'
+      | 'whisperModel'
+      | 'claudeModel'
+      | 'autoSummarize'
+      | 'recordNudge'
+      | 'theme'
+      | 'vocabulary'
+      | 'people'
     >
   >
 ): AppSettings {
@@ -80,6 +89,7 @@ export function updateSettings(
   if (typeof patch.autoSummarize === 'boolean') s.autoSummarize = patch.autoSummarize
   if (typeof patch.recordNudge === 'boolean') s.recordNudge = patch.recordNudge
   if (patch.theme) s.theme = patch.theme
+  if (typeof patch.vocabulary === 'string') s.vocabulary = patch.vocabulary.trim()
   if (Array.isArray(patch.people)) {
     s.people = dedupeNames(patch.people)
   }

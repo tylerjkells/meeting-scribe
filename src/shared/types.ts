@@ -201,6 +201,8 @@ export interface AppSettings {
   /** notify when a calendared meeting starts and nothing is recording */
   recordNudge: boolean
   theme: AppTheme
+  /** names, acronyms, and jargon fed to transcription and summaries */
+  vocabulary: string
   /** team directory: names offered when assigning action items */
   people: string[]
 }

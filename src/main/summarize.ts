@@ -89,7 +89,8 @@ export function transcriptToText(
 export async function summarizeTranscript(
   segments: TranscriptSegment[],
   model: string,
-  attendees?: string[]
+  attendees?: string[],
+  vocabulary?: string
 ): Promise<MeetingSummary> {
   const apiKey = getApiKey()
   if (!apiKey) {
@@ -102,6 +103,9 @@ export async function summarizeTranscript(
     attendees && attendees.length > 0
       ? ` These names are known from the calendar invite or the user's team directory and may appear in this meeting: ${attendees.join(', ')}. When attributing action items or decisions to people, prefer these exact spellings over phonetic guesses from the transcript, but only when the transcript plausibly refers to that person.`
       : ''
+  const vocabNote = vocabulary?.trim()
+    ? ` The user's glossary of domain terms (correct spellings for words speech recognition often mangles): ${vocabulary.trim().slice(0, 600)}. Use these spellings when the transcript clearly means one of them.`
+    : ''
 
   const response = await client.messages.create({
     model,
@@ -112,7 +116,8 @@ export async function summarizeTranscript(
       'Lines labeled "Me" were spoken by the person you are summarizing for; lines labeled "Them" are the other participants (possibly several people). Unlabeled lines could be anyone. ' +
       'Write for the meeting participant reviewing this later: concrete, specific, no filler. ' +
       'Group the discussion into topical sections the way good meeting minutes do: when the conversation jumps between subjects, give each subject its own section with a short heading, and put the substance in the notes (numbers, names, formats, reasons), not vague paraphrase.' +
-      attendeeNote,
+      attendeeNote +
+      vocabNote,
     output_config: {
       format: {
         type: 'json_schema',

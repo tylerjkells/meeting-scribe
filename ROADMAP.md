@@ -49,10 +49,11 @@ usable in meetings that touch student data.
 
 - [ ] **Real speaker diarization** — per-speaker labels beyond the current mic/system-audio
       split, with name assignment; in-person meetings gain speakers for the first time.
-- [ ] **Vocabulary hints** — a user glossary (names, acronyms, program names) fed to Whisper
-      as an initial prompt and to Claude for correction of domain terms.
+- [x] **Vocabulary hints** — a user glossary in Settings (names, acronyms, program names) fed
+      to Whisper as a decoding prompt (whole-file and live chunks) and to the summarizer as a
+      spelling glossary (v0.7.0).
 
 ## 5. Trust
 
-- [ ] **Privacy statement in-app** — a plain-language page stating exactly what leaves the
-      machine and when, so the app is easy to advocate for internally.
+- [x] **Privacy statement in-app** — a plain-language Privacy section in Settings stating
+      exactly what leaves the machine and when (v0.7.0).

@@ -14,7 +14,7 @@ import {
 import { join } from 'path'
 import { randomUUID } from 'crypto'
 import { LiveTranscriber } from './live'
-import { engineStatus } from './whisper'
+import { engineStatus, vocabularyPrompt } from './whisper'
 import { getSettings } from './settings'
 import type {
   EnergySample,
@@ -139,8 +139,11 @@ export function beginRecording(mode: RecordingMode): string {
   const engine = engineStatus(settings.whisperModel)
   const live =
     engine.binaryReady && engine.modelReady
-      ? new LiveTranscriber(meetingDir(id), settings.whisperModel, (segs, ms) =>
-          broadcastLive(id, segs, ms)
+      ? new LiveTranscriber(
+          meetingDir(id),
+          settings.whisperModel,
+          (segs, ms) => broadcastLive(id, segs, ms),
+          vocabularyPrompt(settings.vocabulary)
         )
       : null
 

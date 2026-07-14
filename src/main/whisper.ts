@@ -227,7 +227,17 @@ export async function transcribeFile(
 export async function transcribe(
   wavFile: string,
   model: WhisperModel,
-  onProgress: (percent: number) => void
+  onProgress: (percent: number) => void,
+  prompt?: string
 ): Promise<TranscriptSegment[]> {
-  return transcribeFile(wavFile, model, { onProgress })
+  return transcribeFile(wavFile, model, { onProgress, prompt })
+}
+
+/**
+ * User vocabulary (names, acronyms, jargon) shaped into a whisper prompt.
+ * Whisper's prompt window is small, so the list is capped.
+ */
+export function vocabularyPrompt(vocabulary: string): string {
+  const v = vocabulary.trim().replace(/\s+/g, ' ')
+  return v ? v.slice(0, 400) : ''
 }

@@ -1,7 +1,7 @@
 import { BrowserWindow } from 'electron'
 import { existsSync, rmSync } from 'fs'
 import { readMeeting, writeMeeting, wavPath, labelSpeakers } from './store'
-import { transcribe } from './whisper'
+import { transcribe, vocabularyPrompt } from './whisper'
 import { summarizeTranscript } from './summarize'
 import { getSettings } from './settings'
 import type { Meeting } from '../shared/types'
@@ -43,9 +43,14 @@ export async function processMeeting(id: string): Promise<void> {
       }
       meeting = update(meeting, { stage: 'transcribing', progress: 0, error: undefined })
       try {
-        const transcript = await transcribe(wav, settings.whisperModel, (percent) => {
-          meeting = update(meeting!, { stage: 'transcribing', progress: percent })
-        })
+        const transcript = await transcribe(
+          wav,
+          settings.whisperModel,
+          (percent) => {
+            meeting = update(meeting!, { stage: 'transcribing', progress: percent })
+          },
+          vocabularyPrompt(settings.vocabulary) || undefined
+        )
         labelSpeakers(id, transcript)
         meeting = update(meeting, { transcript, progress: undefined })
         rmSync(wav, { force: true })
@@ -80,7 +85,12 @@ export async function summarizeMeeting(id: string): Promise<void> {
     // either way the model gets real name spellings to attribute against
     const knownNames =
       meeting.attendees && meeting.attendees.length > 0 ? meeting.attendees : settings.people
-    const summary = await summarizeTranscript(transcript, settings.claudeModel, knownNames)
+    const summary = await summarizeTranscript(
+      transcript,
+      settings.claudeModel,
+      knownNames,
+      settings.vocabulary
+    )
     const keepUserTitle =
       meeting.title && !/^(Virtual meeting|Imported meeting|Meeting) · /.test(meeting.title)
     update(meeting, {
