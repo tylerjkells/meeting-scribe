@@ -1498,6 +1498,21 @@ select.text-input {
   margin-right: 5px;
 }
 
+/* cited transcript segment, briefly lit when arriving from an Ask citation */
+.transcript-seg.flash {
+  animation: seg-flash 2.4s var(--ease-out);
+}
+
+@keyframes seg-flash {
+  0%,
+  45% {
+    background: var(--accent-tint);
+  }
+  100% {
+    background: transparent;
+  }
+}
+
 /* ---------- transcript import ---------- */
 
 .import-hint {

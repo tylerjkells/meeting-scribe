@@ -13,7 +13,7 @@ import { MicIcon, ListIcon, GearIcon, CheckIcon, SparkIcon, formatDuration } fro
 export type View =
   | { name: 'library' }
   | { name: 'record' }
-  | { name: 'meeting'; id: string }
+  | { name: 'meeting'; id: string; at?: number }
   | { name: 'ask' }
   | { name: 'actions' }
   | { name: 'import' }
@@ -64,7 +64,7 @@ export default function App(): React.JSX.Element {
     return () => window.removeEventListener('beforeunload', guard)
   }, [rec])
 
-  const openMeeting = (id: string): void => setView({ name: 'meeting', id })
+  const openMeeting = (id: string, at?: number): void => setView({ name: 'meeting', id, at })
 
   return (
     <div className="shell">
@@ -155,6 +155,7 @@ export default function App(): React.JSX.Element {
           {view.name === 'meeting' && (
             <MeetingView
               id={view.id}
+              focusMs={view.at}
               onBack={() => setView({ name: 'library' })}
               onDeleted={() => {
                 refreshMeetings()

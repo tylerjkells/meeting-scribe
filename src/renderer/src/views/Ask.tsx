@@ -9,7 +9,11 @@ const EXAMPLES = [
   'What has everyone committed to this week?'
 ]
 
-export function AskView({ onOpen }: { onOpen: (id: string) => void }): React.JSX.Element {
+export function AskView({
+  onOpen
+}: {
+  onOpen: (id: string, at?: number) => void
+}): React.JSX.Element {
   const [history, setHistory] = useState<LibraryQA[]>([])
   const [loaded, setLoaded] = useState(false)
   const [question, setQuestion] = useState('')
@@ -105,8 +109,12 @@ export function AskView({ onOpen }: { onOpen: (id: string) => void }): React.JSX
                   <button
                     className="source-chip"
                     key={s.ref}
-                    onClick={() => onOpen(s.meetingId)}
-                    title="Open this meeting"
+                    onClick={() => onOpen(s.meetingId, s.timestampMs ?? undefined)}
+                    title={
+                      s.timestampMs !== null
+                        ? 'Open this meeting at the cited moment'
+                        : 'Open this meeting'
+                    }
                   >
                     <span className="source-ref">[{s.ref}]</span>
                     {s.meetingTitle} · {formatWhen(s.createdAt)}

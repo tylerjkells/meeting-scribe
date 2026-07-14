@@ -161,14 +161,19 @@ function AudioPlayer({
 
 export function MeetingView({
   id,
+  focusMs,
   onBack,
   onDeleted
 }: {
   id: string
+  /** transcript moment to scroll to and highlight (from an Ask citation) */
+  focusMs?: number
   onBack: () => void
   onDeleted: () => void
 }): React.JSX.Element {
   const [meeting, setMeeting] = useState<Meeting | null>(null)
+  const [flashIdx, setFlashIdx] = useState<number | null>(null)
+  const flashRef = useRef<HTMLDivElement>(null)
   const [transcriptToggled, setTranscriptToggled] = useState<boolean | null>(null)
   const [copied, setCopied] = useState(false)
   const [exportedTo, setExportedTo] = useState<string | null>(null)
@@ -192,6 +197,26 @@ export function MeetingView({
       if (m.id === id) setMeeting(m)
     })
   }, [id])
+
+  // jump to the cited moment when opened from an Ask citation
+  const transcriptLoaded = (meeting?.transcript?.length ?? 0) > 0
+  useEffect(() => {
+    if (focusMs === undefined || !meeting?.transcript?.length) return
+    const t = meeting.transcript
+    let idx = t.findIndex((s) => focusMs < s.to)
+    if (idx < 0) idx = t.length - 1
+    setFlashIdx(idx)
+    if (meeting.hasAudio) playerRef.current?.seek(focusMs, false)
+    const timer = setTimeout(() => setFlashIdx(null), 2600)
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusMs, meeting?.id, transcriptLoaded])
+
+  useEffect(() => {
+    if (flashIdx !== null) {
+      requestAnimationFrame(() => flashRef.current?.scrollIntoView({ block: 'center' }))
+    }
+  }, [flashIdx])
 
   // Escape returns to the library (unless typing in a field)
   useEffect(() => {
@@ -246,7 +271,7 @@ export function MeetingView({
     onDeleted()
   }
 
-  const transcriptOpen = transcriptToggled ?? !meeting.summary
+  const transcriptOpen = transcriptToggled ?? (focusMs !== undefined || !meeting.summary)
 
   return (
     <div className="main-narrow">
@@ -476,7 +501,8 @@ export function MeetingView({
                   const seekable = meeting.hasAudio
                   return (
                     <div
-                      className={`transcript-seg ${active ? 'active' : ''} ${seekable ? 'seekable' : ''}`}
+                      className={`transcript-seg ${active ? 'active' : ''} ${seekable ? 'seekable' : ''} ${i === flashIdx ? 'flash' : ''}`}
+                      ref={i === flashIdx ? flashRef : undefined}
                       key={i}
                       onClick={seekable ? () => playerRef.current?.seek(seg.from) : undefined}
                       title={seekable ? 'Play from here' : undefined}
