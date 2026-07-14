@@ -1,0 +1,21 @@
+[00:06] Me: Welcome back everyone, first weekly since the retreat. Big agenda: dashboard update, summer B final-ish numbers, adjunct posting, and fall campaign handoff.
+[00:24] Priya: Dashboard first because I have news and it's not great. IT came back and said the nightly Banner extract can't feed Power BI without a middleware piece they can't support until December.
+[00:49] Me: December? The whole point was to stop hand-building the Monday spreadsheet this fall.
+[00:58] Priya: Right. But here's the thing. Marcus found out Institutional Research already has a Tableau server license for the whole division, and they'll give us two creator seats for free.
+[01:22] Marcus: I confirmed it with Dana in IR yesterday. Their Tableau server already reads a Banner snapshot every night, the plumbing exists. I can have a first version of the enrollment dashboard up in two weeks.
+[01:44] Me: Okay. Then I'm reversing the Power BI decision from two weeks ago. New decision: the enrollment dashboard gets built in Tableau on the IR server, Marcus owns the build, first version by July 14.
+[02:07] Marcus: Works. I'll need Priya's field list, whatever she already sent IT.
+[02:15] Priya: Forwarding it today.
+[02:20] Me: Summer B. Where did we land?
+[02:26] Priya: 428 final, so we closed the gap a bit, still 22 under target. And David's survey pull was right, licensure uncertainty came up in 9 of the 14 counseling withdrawals.
+[02:49] Me: So the messaging fix matters. That goes to the campaign sync next week, I'll put it on their agenda.
+[03:02] David: Adjunct update. The dean approved the requisition for Assessment Methods, posting went live Monday. HR says realistic start is August 1, which is tight but workable for a late-August start.
+[03:24] Me: Good. Keep on HR weekly, that timeline has no slack.
+[03:32] David: Will do. Also both Curriculum Design sections hit cap, there's a waitlist of 11 now.
+[03:44] Me: If the waitlist hits 15 we ask Dr. Okafor about a third section. Note it.
+[03:55] Priya: Tuition deadline question is resolved by the way. Bursar confirmed it stays August 15, no change.
+[04:08] Me: One less thing. Last item, fall campaign. Marketing wants our program priority list by July 9 for the campaign sync. I'm proposing counseling, the MBA, and the new data analytics program as the top three.
+[04:33] David: Agreed on those three. The analytics program especially, January start means the campaign is basically its launch window.
+[04:47] Me: Okay, decision: top three fall campaign priorities are counseling, MBA, and MS in data analytics. I'll bring that to the sync on the 8th.
+[05:04] Me: Action items to close: Marcus builds dashboard v1 by July 14, Priya forwards the field list today, David keeps weekly pressure on HR about the adjunct posting, and I take the licensure messaging issue to marketing.
+[05:26] Me: Good meeting, see everyone next week.

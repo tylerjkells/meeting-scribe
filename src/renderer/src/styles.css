@@ -429,7 +429,11 @@ button:disabled {
 
 .empty-state p {
   max-width: 44ch;
-  margin: 0 auto var(--s5);
+  margin: 0 auto var(--s6);
+}
+
+.empty-state .btn-primary {
+  padding: 10px 22px;
 }
 
 /* ---------- record view ---------- */
@@ -999,35 +1003,58 @@ select.text-input {
 
 /* ---------- settings layout ---------- */
 
+/* Label-left, controls-right sections split by hairlines: one vertical
+   axis for every control and a predictable top-to-bottom scan order. */
+
 .settings-wrap {
-  max-width: 1060px;
+  max-width: 900px;
 }
 
-.settings-grid {
+.settings-section {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: var(--s4);
-  align-items: start;
+  grid-template-columns: 230px minmax(0, 560px);
+  column-gap: var(--s7);
+  padding: var(--s6) 0;
 }
 
-.settings-card {
-  border: 1px solid var(--line-soft);
-  border-radius: var(--r-card);
-  padding: var(--s5);
-  display: flex;
-  flex-direction: column;
-  gap: var(--s3);
+.settings-section:first-of-type {
+  padding-top: var(--s2);
 }
 
-.settings-card > h2 {
+.settings-section + .settings-section {
+  border-top: 1px solid var(--line-soft);
+}
+
+.settings-label h2 {
   font-size: 15px;
 }
 
-.settings-card > .hint {
+.settings-label .hint {
   color: var(--ink-faint);
   font-size: 12.5px;
+  margin-top: var(--s2);
+  text-wrap: pretty;
+}
+
+.settings-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  min-width: 0;
+}
+
+.settings-body .hint {
+  color: var(--ink-soft);
+  font-size: 13px;
   margin: 0;
-  max-width: 58ch;
+}
+
+/* narrow window: label stacks above its controls */
+@media (max-width: 1120px) {
+  .settings-section {
+    grid-template-columns: 1fr;
+    row-gap: var(--s4);
+  }
 }
 
 .card-subhead {
@@ -1518,7 +1545,7 @@ input[type='date'] {
 }
 
 .empty-alt {
-  margin-top: var(--s4);
+  margin-top: var(--s7);
   font-size: 13px;
   color: var(--ink-faint);
 }
