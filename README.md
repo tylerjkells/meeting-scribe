@@ -5,11 +5,12 @@ Record, transcribe, and AI-summarize your meetings — locally, privately, and w
 - **Record** in-person meetings (your mic) or virtual meetings (your mic **plus** system audio — whatever comes through your speakers/headset from Webex, Teams, Zoom, anything).
 - **Transcribe** on your own machine with [whisper.cpp](https://github.com/ggml-org/whisper.cpp). Audio never leaves your PC. $0, forever.
 - **Summarize** with the Claude API (pay-per-use — typically 1–5 cents per meeting with Haiku): TL;DR, key points, decisions, action items with owners/due dates, and open questions. Meetings are auto-titled from their content.
-- **Ask about a meeting** — a Q&A box on each meeting page, grounded in that meeting's transcript.
-- **Ask across everything** — a library-wide Ask page that answers from all your meetings at once ("What did we decide about X?", "What has David committed to?"), with citations linking back to the source meetings.
+- **Ask anything** — a floating assistant on every page. On a meeting page it answers from that meeting's transcript; anywhere else it answers across your whole library ("What did we decide about X?", "What has David committed to?") with citations that jump to the exact transcript moment.
 - **Action items rollup** — every follow-up across all meetings in one checklist, with done-tracking.
 - **Today view** — the home screen shows today's calendar (connect any Outlook/Google calendar via its secret iCal address, read-only), today's recordings, and your open action items. Recordings started during a calendar event are titled after it, and each event carries a pre-meeting brief — what was decided last time, which follow-ups are still open, and unresolved questions — pulled from the most recent related meeting in your library.
 - **Record nudge** — a system notification when a calendared meeting starts and nothing is recording, so you never lose a meeting to a forgotten record button. One click lands you on the Record page.
+- **Follow-up email** — one click drafts a recap right in the app (TL;DR, decisions, action items with owners, open questions); edit it, copy it, paste it into any mail client.
+- **Color schemes** — Studio (default), Rowan (brown & gold), Slate (cool blue), and Paper (light), switchable in Settings.
 - Pause/resume while recording, search the library (press `/`), copy summaries as Markdown, export full meetings to `.md`.
 
 ## Running in development

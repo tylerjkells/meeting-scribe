@@ -45,6 +45,14 @@ import type {
   WhisperModel
 } from '../shared/types'
 
+/** pre-paint window color per theme, so launch doesn't flash the wrong shade */
+const WINDOW_BG: Record<string, string> = {
+  studio: '#101013',
+  rowan: '#17120a',
+  slate: '#101318',
+  paper: '#f8f6f3'
+}
+
 function createWindow(): BrowserWindow {
   const win = new BrowserWindow({
     width: 1120,
@@ -53,7 +61,7 @@ function createWindow(): BrowserWindow {
     minHeight: 600,
     show: false,
     autoHideMenuBar: true,
-    backgroundColor: '#101013',
+    backgroundColor: WINDOW_BG[getSettings().theme] ?? '#101013',
     title: 'MeetingScribe',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),

@@ -36,8 +36,9 @@ usable in meetings that touch student data.
 
 ## 3. Action items that leave the app
 
-- [ ] **Follow-up email draft** — one click turns a summary into a recap email addressed to
-      the attendees.
+- [x] **Follow-up email draft** — a "Follow-up email" button on the meeting page opens an
+      in-app, editable recap draft (TL;DR, decisions, action items with owners and dues, open
+      questions) with copy buttons for subject and body — paste into any mail client (v0.6.0).
 - [ ] **Task push** — send an action item (owner, due date) to ClickUp / Microsoft To Do.
 - [ ] **Weekly digest** — what's open, what's overdue, what you committed to this week.
 

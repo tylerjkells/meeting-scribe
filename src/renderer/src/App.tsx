@@ -7,16 +7,15 @@ import { MeetingView } from './views/MeetingDetail'
 import { SettingsView } from './views/Settings'
 import { ActionsView } from './views/Actions'
 import { ImportView } from './views/Import'
-import { AskView } from './views/Ask'
 import { TodayView } from './views/Today'
-import { MicIcon, ListIcon, GearIcon, CheckIcon, SparkIcon, TodayIcon, formatDuration } from './ui'
+import { AskWidget } from './AskWidget'
+import { MicIcon, ListIcon, GearIcon, CheckIcon, TodayIcon, formatDuration } from './ui'
 
 export type View =
   | { name: 'today' }
   | { name: 'library' }
   | { name: 'record' }
   | { name: 'meeting'; id: string; at?: number }
-  | { name: 'ask' }
   | { name: 'actions' }
   | { name: 'import' }
   | { name: 'settings' }
@@ -89,12 +88,6 @@ export default function App(): React.JSX.Element {
           onClick={() => setView({ name: 'library' })}
         >
           <ListIcon /> Meetings
-        </button>
-        <button
-          className={`nav-btn ${view.name === 'ask' ? 'active' : ''}`}
-          onClick={() => setView({ name: 'ask' })}
-        >
-          <SparkIcon /> Ask
         </button>
         <button
           className={`nav-btn ${view.name === 'actions' ? 'active' : ''}`}
@@ -183,7 +176,6 @@ export default function App(): React.JSX.Element {
               }}
             />
           )}
-          {view.name === 'ask' && <AskView onOpen={openMeeting} />}
           {view.name === 'actions' && <ActionsView onOpen={openMeeting} />}
           {view.name === 'import' && (
             <ImportView
@@ -199,6 +191,18 @@ export default function App(): React.JSX.Element {
           )}
         </div>
       </main>
+
+      <AskWidget
+        meetingContext={
+          view.name === 'meeting'
+            ? {
+                id: view.id,
+                title: meetings.find((m) => m.id === view.id)?.title ?? 'this meeting'
+              }
+            : null
+        }
+        onOpenMeeting={openMeeting}
+      />
     </div>
   )
 }

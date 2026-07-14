@@ -151,6 +151,8 @@ export interface EventBrief {
 
 export type WhisperModel = 'base.en' | 'small.en' | 'medium.en'
 
+export type AppTheme = 'studio' | 'rowan' | 'slate' | 'paper'
+
 export interface AppSettings {
   whisperModel: WhisperModel
   claudeModel: string
@@ -160,6 +162,7 @@ export interface AppSettings {
   hasCalendar: boolean
   /** notify when a calendared meeting starts and nothing is recording */
   recordNudge: boolean
+  theme: AppTheme
   /** team directory: names offered when assigning action items */
   people: string[]
 }

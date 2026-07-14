@@ -1,5 +1,18 @@
 import { useEffect, useState } from 'react'
-import type { AppSettings, EngineProgress, EngineStatus, WhisperModel } from '../../../shared/types'
+import type {
+  AppSettings,
+  AppTheme,
+  EngineProgress,
+  EngineStatus,
+  WhisperModel
+} from '../../../shared/types'
+
+const THEMES: { id: AppTheme; title: string; desc: string; bg: string; accent: string }[] = [
+  { id: 'studio', title: 'Studio', desc: 'Warm dark, signal red. The default.', bg: '#1b1717', accent: '#dc5546' },
+  { id: 'rowan', title: 'Rowan', desc: 'Brown & gold, after the Profs.', bg: '#211a10', accent: '#e5b52e' },
+  { id: 'slate', title: 'Slate', desc: 'Cool graphite, steel blue.', bg: '#16181d', accent: '#5e95dd' },
+  { id: 'paper', title: 'Paper', desc: 'Light, for bright offices.', bg: '#f8f6f3', accent: '#c33e2e' }
+]
 
 const WHISPER_MODELS: { id: WhisperModel; title: string; desc: string }[] = [
   { id: 'base.en', title: 'Base', desc: 'Fastest, ~140 MB. Fine for clear audio.' },
@@ -155,6 +168,35 @@ export function SettingsView({
       <div className="page-head">
         <h1>Settings</h1>
       </div>
+
+      <section className="settings-section">
+        <header className="settings-label">
+          <h2>Appearance</h2>
+          <p className="hint">Applies immediately, everywhere in the app.</p>
+        </header>
+        <div className="settings-body">
+          <div className="theme-grid" role="radiogroup" aria-label="Color scheme">
+            {THEMES.map((t) => (
+              <button
+                key={t.id}
+                className={`theme-opt ${settings.theme === t.id ? 'selected' : ''}`}
+                role="radio"
+                aria-checked={settings.theme === t.id}
+                onClick={async () => {
+                  document.documentElement.dataset.theme = t.id
+                  onChange(await window.scribe.settings.update({ theme: t.id }))
+                }}
+              >
+                <span className="theme-swatch" style={{ background: t.bg }} aria-hidden="true">
+                  <span className="theme-swatch-dot" style={{ background: t.accent }} />
+                </span>
+                <span className="theme-name">{t.title}</span>
+                <span className="opt-desc">{t.desc}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
 
       <section className="settings-section">
         <header className="settings-label">

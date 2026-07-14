@@ -1,7 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Meeting } from '../../../shared/types'
-import { BackIcon, ChevronIcon, formatDuration, formatWhen, OwnerEditor, StageBadge } from '../ui'
-import { exportFilename, meetingToMarkdown, summaryToMarkdown } from '../markdown'
+import {
+  BackIcon,
+  ChevronIcon,
+  formatDuration,
+  formatWhen,
+  OwnerEditor,
+  StageBadge,
+  useConfirm
+} from '../ui'
+import { exportFilename, followUpEmail, meetingToMarkdown, summaryToMarkdown } from '../markdown'
 
 function Collapse({
   label,
@@ -177,10 +185,12 @@ export function MeetingView({
   const [transcriptToggled, setTranscriptToggled] = useState<boolean | null>(null)
   const [copied, setCopied] = useState(false)
   const [exportedTo, setExportedTo] = useState<string | null>(null)
+  const [emailDraft, setEmailDraft] = useState<{ subject: string; body: string } | null>(null)
   const [knownOwners, setKnownOwners] = useState<string[]>([])
   const [playheadMs, setPlayheadMs] = useState(-1)
   const playerRef = useRef<PlayerControl | null>(null)
   const titleRef = useRef<HTMLInputElement>(null)
+  const [confirmEl, confirm] = useConfirm()
 
   useEffect(() => {
     Promise.all([window.scribe.settings.get(), window.scribe.actions.list()]).then(
@@ -220,6 +230,8 @@ export function MeetingView({
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
       const target = e.target as HTMLElement
+      // an open dialog or Ask panel owns Escape (they close themselves)
+      if (document.querySelector('dialog[open]') || document.querySelector('.askw-panel')) return
       if (e.key === 'Escape' && target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {
         onBack()
       }
@@ -261,9 +273,12 @@ export function MeetingView({
   }
 
   async function remove(): Promise<void> {
-    const sure = window.confirm(
-      `Delete "${meeting?.title}"? Audio, transcript, and summary will be removed.`
-    )
+    const sure = await confirm({
+      title: `Delete "${meeting?.title}"?`,
+      body: 'Audio, transcript, and summary will be removed. This cannot be undone.',
+      confirmLabel: 'Delete meeting',
+      danger: true
+    })
     if (!sure || !meeting) return
     await window.scribe.meetings.delete(meeting.id)
     onDeleted()
@@ -329,16 +344,27 @@ export function MeetingView({
                 {copied ? 'Copied ✓' : 'Copy summary'}
               </button>
             )}
+            {meeting.summary && (
+              <button
+                className="btn"
+                title="Draft a recap to copy into an email"
+                onClick={() => setEmailDraft(emailDraft ? null : followUpEmail(meeting))}
+              >
+                Follow-up email
+              </button>
+            )}
             <button className="btn" onClick={exportMd}>
               Export Markdown
             </button>
             {meeting.summary && meeting.transcript && meeting.transcript.length > 0 && (
               <button
-                className="btn btn-ghost"
-                onClick={() => {
-                  const sure = window.confirm(
-                    'Rewrite the summary from the transcript? Owner assignments and checked-off action items will be reset.'
-                  )
+                className="btn"
+                onClick={async () => {
+                  const sure = await confirm({
+                    title: 'Rewrite the summary from the transcript?',
+                    body: 'Owner assignments and checked-off action items will be reset.',
+                    confirmLabel: 'Regenerate'
+                  })
                   if (sure) window.scribe.meetings.resummarize(meeting.id)
                 }}
               >
@@ -353,6 +379,14 @@ export function MeetingView({
           </div>
         )}
       </div>
+
+      {emailDraft && (
+        <EmailDraft
+          draft={emailDraft}
+          onChange={setEmailDraft}
+          onClose={() => setEmailDraft(null)}
+        />
+      )}
 
       {meeting.hasAudio && (
         <AudioPlayer
@@ -401,10 +435,6 @@ export function MeetingView({
         <Collapse label="TL;DR">
           <p className="tldr">{meeting.summary.tldr}</p>
         </Collapse>
-      )}
-
-      {meeting.transcript && meeting.transcript.length > 0 && (
-        <AskSection meeting={meeting} onAnswer={(m) => setMeeting(m)} />
       )}
 
       {meeting.summary && (
@@ -527,19 +557,18 @@ export function MeetingView({
         </section>
       )}
 
-      {!meeting.summary && meeting.transcript && meeting.transcript.length > 0 && (
-        <AskSection meeting={meeting} onAnswer={(m) => setMeeting(m)} />
-      )}
-
       <section className="section danger-row">
         {meeting.hasAudio && meeting.transcript && meeting.transcript.length > 0 && (
           <button
-            className="btn btn-ghost"
+            className="btn"
             title="Frees disk space; the transcript, summary, and Q&A stay"
             onClick={async () => {
-              const sure = window.confirm(
-                'Delete the audio recording? The transcript, summary, and Q&A are kept. This frees disk space but the audio cannot be recovered.'
-              )
+              const sure = await confirm({
+                title: 'Delete the audio recording?',
+                body: 'The transcript, summary, and Q&A are kept. This frees disk space but the audio cannot be recovered.',
+                confirmLabel: 'Delete audio',
+                danger: true
+              })
               if (!sure) return
               const updated = await window.scribe.meetings.deleteAudio(meeting.id)
               if (updated) setMeeting(updated)
@@ -548,11 +577,75 @@ export function MeetingView({
             Delete audio, keep notes
           </button>
         )}
-        <button className="btn btn-ghost btn-danger" onClick={remove}>
+        <button className="btn btn-danger" onClick={remove}>
           Delete meeting
         </button>
       </section>
+      {confirmEl}
     </div>
+  )
+}
+
+/** editable recap draft the user copies into their own email */
+function EmailDraft({
+  draft,
+  onChange,
+  onClose
+}: {
+  draft: { subject: string; body: string }
+  onChange: (d: { subject: string; body: string }) => void
+  onClose: () => void
+}): React.JSX.Element {
+  const [copiedWhat, setCopiedWhat] = useState<'subject' | 'body' | null>(null)
+
+  async function copy(what: 'subject' | 'body'): Promise<void> {
+    await navigator.clipboard.writeText(what === 'subject' ? draft.subject : draft.body)
+    setCopiedWhat(what)
+    setTimeout(() => setCopiedWhat(null), 1800)
+  }
+
+  return (
+    <section className="section email-draft">
+      <div className="email-draft-head">
+        <span className="card-subhead">Follow-up email draft</span>
+        <button className="btn btn-ghost" onClick={onClose}>
+          Close
+        </button>
+      </div>
+      <div>
+        <label className="field-label" htmlFor="email-draft-subject">
+          Subject
+        </label>
+        <div className="field-row">
+          <input
+            id="email-draft-subject"
+            className="text-input"
+            value={draft.subject}
+            onChange={(e) => onChange({ ...draft, subject: e.target.value })}
+          />
+          <button className="btn email-copy-btn" onClick={() => copy('subject')}>
+            {copiedWhat === 'subject' ? 'Copied ✓' : 'Copy subject'}
+          </button>
+        </div>
+      </div>
+      <div>
+        <label className="field-label" htmlFor="email-draft-body">
+          Body
+        </label>
+        <textarea
+          id="email-draft-body"
+          className="text-input email-draft-body"
+          value={draft.body}
+          onChange={(e) => onChange({ ...draft, body: e.target.value })}
+        />
+      </div>
+      <div className="email-draft-actions">
+        <span className="opt-desc">Edit freely, then paste into a new email.</span>
+        <button className="btn email-copy-btn" onClick={() => copy('body')}>
+          {copiedWhat === 'body' ? 'Copied ✓' : 'Copy body'}
+        </button>
+      </div>
+    </section>
   )
 }
 
@@ -592,76 +685,5 @@ function SpeakerNames({
         aria-label="Name for the other participants' lines"
       />
     </div>
-  )
-}
-
-function AskSection({
-  meeting,
-  onAnswer
-}: {
-  meeting: Meeting
-  onAnswer: (m: Meeting) => void
-}): React.JSX.Element {
-  const [question, setQuestion] = useState('')
-  const [asking, setAsking] = useState(false)
-  const [showAll, setShowAll] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const endRef = useRef<HTMLDivElement>(null)
-
-  async function ask(): Promise<void> {
-    const q = question.trim()
-    if (!q || asking) return
-    setAsking(true)
-    setError(null)
-    try {
-      const answer = await window.scribe.meetings.ask(meeting.id, q)
-      onAnswer({ ...meeting, qa: [...(meeting.qa ?? []), { q, a: answer }] })
-      setQuestion('')
-      requestAnimationFrame(() => endRef.current?.scrollIntoView({ block: 'nearest' }))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'The question could not be answered.')
-    } finally {
-      setAsking(false)
-    }
-  }
-
-  const qa = meeting.qa ?? []
-  const visibleQa = showAll ? qa : qa.slice(-3)
-
-  return (
-    <Collapse label="Ask about this meeting">
-      {qa.length > 3 && !showAll && (
-        <button className="btn btn-ghost qa-earlier" onClick={() => setShowAll(true)}>
-          Show {qa.length - 3} earlier {qa.length - 3 === 1 ? 'question' : 'questions'}
-        </button>
-      )}
-      {visibleQa.map((x, i) => (
-        <div className="qa-pair" key={i}>
-          <p className="qa-q">{x.q}</p>
-          <p className="qa-a">{x.a}</p>
-        </div>
-      ))}
-      <div ref={endRef} />
-      <div className="field-row qa-input-row">
-        <input
-          className="text-input"
-          type="text"
-          placeholder="What did we decide about…"
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && ask()}
-          disabled={asking}
-          aria-label="Ask a question about this meeting"
-        />
-        <button className="btn btn-primary" onClick={ask} disabled={asking || !question.trim()}>
-          {asking ? 'Thinking…' : 'Ask'}
-        </button>
-      </div>
-      {error && (
-        <p className="field-note error" role="alert">
-          {error}
-        </p>
-      )}
-    </Collapse>
   )
 }

@@ -12,10 +12,19 @@
   --bg-overlay: oklch(0.26 0.008 25);
   --line: oklch(0.32 0.008 25);
   --line-soft: oklch(0.27 0.007 25);
+  --bg-sidebar: oklch(0.165 0.006 25);
+  --line-strong: oklch(0.38 0.01 25);
   --accent: oklch(0.63 0.17 27);
   --accent-strong: oklch(0.68 0.19 27);
   --accent-dim: oklch(0.45 0.11 27);
   --accent-tint: oklch(0.63 0.17 27 / 0.12);
+  --accent-tint-strong: oklch(0.63 0.17 27 / 0.2);
+  --accent-flash: oklch(0.63 0.17 27 / 0.3);
+  --accent-glow: oklch(0.63 0.17 27 / 0.5);
+  /* ink on accent-colored surfaces (buttons, checked boxes) */
+  --on-accent: oklch(0.15 0.02 27);
+  /* switch thumb when the switch is on */
+  --knob-on: oklch(0.97 0.005 27);
   --ok: oklch(0.72 0.13 155);
   --warn: oklch(0.78 0.13 85);
 
@@ -41,6 +50,84 @@
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --t-fast: 130ms;
   --t-med: 220ms;
+}
+
+/* ---------- themes ----------
+   Every color flows through the variables above, so a theme is just a
+   different palette. Dark themes keep the same lightness architecture;
+   Paper inverts it. */
+
+:root[data-theme='rowan'] {
+  /* brown & gold, after the Profs */
+  --ink: oklch(0.93 0.008 85);
+  --ink-soft: oklch(0.73 0.015 80);
+  --ink-faint: oklch(0.56 0.02 75);
+  --bg: oklch(0.19 0.012 65);
+  --bg-raised: oklch(0.23 0.014 65);
+  --bg-overlay: oklch(0.265 0.016 65);
+  --line: oklch(0.32 0.02 70);
+  --line-soft: oklch(0.27 0.018 70);
+  --bg-sidebar: oklch(0.165 0.012 65);
+  --line-strong: oklch(0.39 0.025 70);
+  --accent: oklch(0.8 0.14 90);
+  --accent-strong: oklch(0.86 0.15 92);
+  --accent-dim: oklch(0.55 0.09 85);
+  --accent-tint: oklch(0.8 0.14 90 / 0.12);
+  --accent-tint-strong: oklch(0.8 0.14 90 / 0.2);
+  --accent-flash: oklch(0.8 0.14 90 / 0.3);
+  --accent-glow: oklch(0.8 0.14 90 / 0.45);
+  --on-accent: oklch(0.22 0.04 75);
+  --knob-on: oklch(0.2 0.03 75);
+  /* warn shifts to orange so it can't be confused with the gold accent */
+  --warn: oklch(0.74 0.13 60);
+}
+
+:root[data-theme='slate'] {
+  /* cool graphite with steel blue */
+  --ink: oklch(0.93 0.005 250);
+  --ink-soft: oklch(0.72 0.01 250);
+  --ink-faint: oklch(0.55 0.012 250);
+  --bg: oklch(0.185 0.008 255);
+  --bg-raised: oklch(0.225 0.01 255);
+  --bg-overlay: oklch(0.26 0.012 255);
+  --line: oklch(0.32 0.012 255);
+  --line-soft: oklch(0.27 0.01 255);
+  --bg-sidebar: oklch(0.163 0.008 255);
+  --line-strong: oklch(0.38 0.015 255);
+  --accent: oklch(0.68 0.12 245);
+  --accent-strong: oklch(0.74 0.13 245);
+  --accent-dim: oklch(0.47 0.09 248);
+  --accent-tint: oklch(0.68 0.12 245 / 0.13);
+  --accent-tint-strong: oklch(0.68 0.12 245 / 0.2);
+  --accent-flash: oklch(0.68 0.12 245 / 0.3);
+  --accent-glow: oklch(0.68 0.12 245 / 0.45);
+  --on-accent: oklch(0.14 0.02 250);
+  --knob-on: oklch(0.97 0.005 250);
+}
+
+:root[data-theme='paper'] {
+  /* light, for bright offices; the signal-red family stays */
+  --ink: oklch(0.25 0.012 27);
+  --ink-soft: oklch(0.42 0.012 27);
+  --ink-faint: oklch(0.55 0.012 27);
+  --bg: oklch(0.975 0.003 60);
+  --bg-raised: oklch(0.945 0.004 60);
+  --bg-overlay: oklch(0.915 0.005 60);
+  --line: oklch(0.85 0.008 50);
+  --line-soft: oklch(0.9 0.006 50);
+  --bg-sidebar: oklch(0.955 0.004 60);
+  --line-strong: oklch(0.75 0.012 50);
+  --accent: oklch(0.56 0.19 27);
+  --accent-strong: oklch(0.5 0.19 27);
+  --accent-dim: oklch(0.75 0.09 27);
+  --accent-tint: oklch(0.56 0.19 27 / 0.09);
+  --accent-tint-strong: oklch(0.56 0.19 27 / 0.16);
+  --accent-flash: oklch(0.56 0.19 27 / 0.25);
+  --accent-glow: oklch(0.56 0.19 27 / 0.35);
+  --on-accent: oklch(0.985 0.005 27);
+  --knob-on: oklch(0.985 0.005 27);
+  --ok: oklch(0.5 0.12 155);
+  --warn: oklch(0.55 0.11 80);
 }
 
 * {
@@ -132,7 +219,7 @@ button:disabled {
   gap: var(--s2);
   padding: var(--s5) var(--s4);
   border-right: 1px solid var(--line-soft);
-  background: oklch(0.165 0.006 25);
+  background: var(--bg-sidebar);
 }
 
 .brand {
@@ -151,7 +238,7 @@ button:disabled {
   height: 10px;
   border-radius: 50%;
   background: var(--accent);
-  box-shadow: 0 0 12px oklch(0.63 0.17 27 / 0.5);
+  box-shadow: 0 0 12px var(--accent-glow);
 }
 
 .nav-btn {
@@ -195,7 +282,7 @@ button:disabled {
   padding: var(--s3) var(--s4);
   border-radius: var(--r-ctl);
   background: var(--accent);
-  color: oklch(0.15 0.02 27);
+  color: var(--on-accent);
   font-weight: 650;
   transition:
     background var(--t-fast) var(--ease-out),
@@ -227,7 +314,7 @@ button:disabled {
 }
 
 .rec-indicator:hover {
-  background: oklch(0.63 0.17 27 / 0.2);
+  background: var(--accent-tint-strong);
 }
 
 .rec-indicator .dot {
@@ -400,7 +487,7 @@ button:disabled {
 }
 
 .badge-error {
-  background: oklch(0.63 0.17 27 / 0.18);
+  background: var(--accent-tint-strong);
   color: var(--accent-strong);
 }
 
@@ -504,7 +591,7 @@ button:disabled {
   background: var(--accent);
   display: grid;
   place-items: center;
-  color: oklch(0.15 0.02 27);
+  color: var(--on-accent);
   transition:
     background var(--t-fast) var(--ease-out),
     transform var(--t-fast) var(--ease-out);
@@ -612,7 +699,7 @@ button:disabled {
 
 .btn:hover {
   background: var(--bg-overlay);
-  border-color: oklch(0.38 0.01 25);
+  border-color: var(--line-strong);
 }
 
 .btn:active {
@@ -622,7 +709,7 @@ button:disabled {
 .btn-primary {
   background: var(--accent);
   border-color: transparent;
-  color: oklch(0.15 0.02 27);
+  color: var(--on-accent);
   font-weight: 650;
 }
 
@@ -994,7 +1081,7 @@ select.text-input {
 }
 
 .text-input:hover {
-  border-color: oklch(0.38 0.01 25);
+  border-color: var(--line-strong);
 }
 
 .text-input:focus-visible {
@@ -1079,6 +1166,57 @@ select.text-input {
   letter-spacing: 0.09em;
   color: var(--ink-faint);
   margin-top: var(--s2);
+}
+
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--s2);
+}
+
+.theme-opt {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s1);
+  padding: var(--s3);
+  text-align: left;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-ctl);
+  transition:
+    border-color var(--t-fast) var(--ease-out),
+    background var(--t-fast) var(--ease-out);
+}
+
+.theme-opt:hover {
+  background: var(--bg-raised);
+}
+
+.theme-opt.selected {
+  border-color: var(--accent);
+  background: var(--accent-tint);
+}
+
+.theme-swatch {
+  width: 48px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  padding-left: 7px;
+  margin-bottom: var(--s1);
+}
+
+.theme-swatch-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.theme-name {
+  font-weight: 600;
+  font-size: 13.5px;
 }
 
 .opt-list {
@@ -1199,7 +1337,7 @@ select.text-input {
 
 .switch.on .switch-knob {
   transform: translateX(18px);
-  background: oklch(0.97 0.005 27);
+  background: var(--knob-on);
 }
 
 .dir-list {
@@ -1383,8 +1521,8 @@ select.text-input {
   content: '';
   width: 9px;
   height: 5px;
-  border-left: 2px solid oklch(0.15 0.02 27);
-  border-bottom: 2px solid oklch(0.15 0.02 27);
+  border-left: 2px solid var(--on-accent);
+  border-bottom: 2px solid var(--on-accent);
   transform: rotate(-45deg) translateY(-1px);
 }
 
@@ -1675,6 +1813,130 @@ select.text-input {
   align-self: flex-start;
 }
 
+/* ---------- ask widget (floating assistant) ---------- */
+
+.askw-fab {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 4px 16px oklch(0 0 0 / 0.35);
+  z-index: 40;
+  transition:
+    background var(--t-fast) var(--ease-out),
+    transform var(--t-fast) var(--ease-out);
+}
+
+.askw-fab:hover {
+  background: var(--accent-strong);
+}
+
+.askw-fab:active {
+  transform: scale(0.94);
+}
+
+.askw-panel {
+  position: fixed;
+  right: 24px;
+  bottom: 84px;
+  width: min(410px, calc(100vw - 48px));
+  height: min(560px, calc(100vh - 120px));
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  box-shadow: 0 12px 40px oklch(0 0 0 / 0.45);
+  z-index: 40;
+  animation: askw-in 180ms var(--ease-out);
+}
+
+@keyframes askw-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .askw-panel {
+    animation: none;
+  }
+}
+
+.askw-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  padding: var(--s3) var(--s3) var(--s3) var(--s4);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.askw-title {
+  font-weight: 650;
+  font-size: 13.5px;
+}
+
+.askw-head-tools {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+}
+
+.askw-clear {
+  font-size: 12px;
+}
+
+.askw-close {
+  padding: 2px 9px;
+  font-size: 13px;
+}
+
+.askw-toggle button {
+  font-size: 12px;
+  padding: 3px 10px;
+}
+
+.askw-context {
+  flex: none;
+  padding: var(--s2) var(--s4) 0;
+  color: var(--ink-faint);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.askw-thread {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--s4);
+}
+
+.askw-empty .ask-examples {
+  margin-top: var(--s3);
+  margin-bottom: 0;
+}
+
+.askw-earlier {
+  margin-bottom: var(--s3);
+  font-size: 12px;
+}
+
+.askw-input-row {
+  flex: none;
+  padding: var(--s3) var(--s4) var(--s4);
+  border-top: 1px solid var(--line-soft);
+}
+
 /* ---------- ask across meetings ---------- */
 
 .ask-hint {
@@ -1745,11 +2007,116 @@ select.text-input {
 
 @keyframes seg-flash {
   0% {
-    background: oklch(0.63 0.17 27 / 0.3);
+    background: var(--accent-flash);
   }
   100% {
     background: var(--accent-tint);
   }
+}
+
+/* ---------- confirm dialog ---------- */
+
+dialog.confirm {
+  margin: auto;
+  width: min(440px, 90vw);
+  padding: var(--s5);
+  background: var(--bg-raised);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+}
+
+dialog.confirm[open] {
+  animation: confirm-in 150ms var(--ease-out);
+}
+
+@keyframes confirm-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  dialog.confirm[open] {
+    animation: none;
+  }
+}
+
+dialog.confirm::backdrop {
+  background: oklch(0 0 0 / 0.45);
+}
+
+dialog.confirm h3 {
+  font-size: 15px;
+  margin-bottom: var(--s2);
+}
+
+dialog.confirm p {
+  color: var(--ink-soft);
+  font-size: 13px;
+  text-wrap: pretty;
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--s2);
+  margin-top: var(--s5);
+}
+
+/* solid accent button for confirming destructive actions */
+.btn-solid-danger {
+  background: var(--accent);
+  border-color: transparent;
+  color: var(--on-accent);
+  font-weight: 650;
+}
+
+.btn-solid-danger:hover {
+  background: var(--accent-strong);
+  border-color: transparent;
+}
+
+/* ---------- follow-up email draft ---------- */
+
+.email-draft {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-card);
+  padding: var(--s4);
+  margin-bottom: var(--s4);
+}
+
+.email-draft-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.email-draft-body {
+  min-height: 240px;
+  resize: vertical;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* equal-height, fixed-width copy buttons that never wrap or resize on
+   the "Copied ✓" state */
+.email-copy-btn {
+  flex: none;
+  white-space: nowrap;
+  min-width: 122px;
+  text-align: center;
+}
+
+.email-draft-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
 }
 
 /* ---------- transcript import ---------- */
