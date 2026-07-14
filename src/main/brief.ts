@@ -41,8 +41,9 @@ function findSeriesMeeting(eventTitle: string): Meeting | null {
     }
   }
 
+  // one generic word ("team") matches half the library; demand at least two
   const words = significantWords(eventTitle)
-  if (words.length === 0) return null
+  if (words.length < 2) return null
   for (const it of items) {
     if (isToday(it.createdAt)) continue
     const m = readMeeting(it.id)
