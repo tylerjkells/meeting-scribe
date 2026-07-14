@@ -1503,6 +1503,16 @@ select.text-input {
   border-radius: var(--r-ctl);
 }
 
+/* an expanded brief makes the row tall: pin time (and Record) to the top
+   beside the title instead of floating mid-row */
+.sched-row:has(.sched-brief) {
+  align-items: flex-start;
+}
+
+.sched-row:has(.sched-brief) .sched-time {
+  padding-top: 2px;
+}
+
 .sched-row + .sched-row {
   border-top: 1px solid var(--line-soft);
 }
