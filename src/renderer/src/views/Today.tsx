@@ -25,8 +25,7 @@ function cleanLocation(location: string | null): string | null {
       (p) =>
         p.length > 0 &&
         !/^https?:\/\//i.test(p) &&
-        !/^(microsoft teams|zoom|webex|google) meeting$/i.test(p) &&
-        !/^microsoft teams$/i.test(p)
+        !/^(microsoft teams|zoom|webex|google|webex by cisco)( meeting)?$/i.test(p)
     )
   return parts.length > 0 ? parts.join('; ') : null
 }

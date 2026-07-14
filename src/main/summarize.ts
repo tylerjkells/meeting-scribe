@@ -100,7 +100,7 @@ export async function summarizeTranscript(
   const transcript = transcriptToText(segments)
   const attendeeNote =
     attendees && attendees.length > 0
-      ? ` The calendar invite lists these participants: ${attendees.join(', ')}. When attributing action items or decisions to people, prefer these exact names over phonetic guesses from the transcript.`
+      ? ` These names are known from the calendar invite or the user's team directory and may appear in this meeting: ${attendees.join(', ')}. When attributing action items or decisions to people, prefer these exact spellings over phonetic guesses from the transcript, but only when the transcript plausibly refers to that person.`
       : ''
 
   const response = await client.messages.create({
