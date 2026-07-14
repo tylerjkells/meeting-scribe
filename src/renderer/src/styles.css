@@ -1437,6 +1437,161 @@ select.text-input {
   margin-top: var(--s3);
 }
 
+/* ---------- today ---------- */
+
+.today-col {
+  max-width: 760px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s6);
+}
+
+.today-section > .card-subhead {
+  margin-bottom: var(--s3);
+}
+
+.today-quiet {
+  color: var(--ink-faint);
+  font-size: 13px;
+}
+
+.today-connect {
+  border: 1px dashed var(--line);
+  border-radius: var(--r-card);
+  padding: var(--s4) var(--s5);
+  display: flex;
+  align-items: center;
+  gap: var(--s5);
+}
+
+.today-connect p {
+  color: var(--ink-soft);
+  font-size: 13px;
+  max-width: 52ch;
+  flex: 1;
+}
+
+.today-connect .btn {
+  flex: none;
+}
+
+.today-allday {
+  color: var(--ink-soft);
+  font-size: 12.5px;
+  margin-bottom: var(--s2);
+}
+
+.sched-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.sched-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+  padding: var(--s3) var(--s3);
+  border-radius: var(--r-ctl);
+}
+
+.sched-row + .sched-row {
+  border-top: 1px solid var(--line-soft);
+}
+
+.sched-row.live {
+  background: var(--accent-tint);
+  border-top-color: transparent;
+}
+
+.sched-row.live + .sched-row {
+  border-top-color: transparent;
+}
+
+.sched-row.past {
+  opacity: 0.55;
+}
+
+.sched-time {
+  flex: none;
+  width: 76px;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+
+.sched-time-end {
+  color: var(--ink-faint);
+  font-size: 11px;
+}
+
+.sched-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.sched-title {
+  font-weight: 600;
+  font-size: 13.5px;
+}
+
+.sched-now {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-strong);
+  margin-right: var(--s2);
+  vertical-align: 1px;
+}
+
+.sched-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s3);
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+
+.sched-join {
+  font-weight: 600;
+}
+
+.sched-related {
+  font-size: 12px;
+  color: var(--ink-faint);
+  text-align: left;
+  padding: 0;
+  border-radius: 4px;
+  transition: color var(--t-fast) var(--ease-out);
+}
+
+.sched-related:hover {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.sched-record {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.today-more {
+  margin-top: var(--s3);
+  font-size: 12.5px;
+  align-self: flex-start;
+}
+
 /* ---------- ask across meetings ---------- */
 
 .ask-hint {

@@ -61,6 +61,9 @@ export function SettingsView({
   const [dlProgress, setDlProgress] = useState<EngineProgress | null>(null)
   const [downloading, setDownloading] = useState<WhisperModel | null>(null)
   const [personDraft, setPersonDraft] = useState('')
+  const [calDraft, setCalDraft] = useState('')
+  const [calStatus, setCalStatus] = useState<{ ok: boolean; msg: string } | null>(null)
+  const [connectingCal, setConnectingCal] = useState(false)
   const [storage, setStorage] = useState<{ count: number; totalBytes: number; audioBytes: number } | null>(null)
   const [version, setVersion] = useState('')
 
@@ -114,6 +117,30 @@ export function SettingsView({
         setDlProgress(null)
       }
     }
+  }
+
+  async function connectCalendar(): Promise<void> {
+    const url = calDraft.trim()
+    if (!url) return
+    setConnectingCal(true)
+    setCalStatus(null)
+    const result = await window.scribe.calendar.connect(url)
+    if (result.ok) {
+      onChange(await window.scribe.settings.get())
+      setCalDraft('')
+      setCalStatus({
+        ok: true,
+        msg: `Connected — ${result.countThisWeek ?? 0} event${result.countThisWeek === 1 ? '' : 's'} in the next 7 days.`
+      })
+    } else {
+      setCalStatus({ ok: false, msg: result.error ?? 'Could not read that feed.' })
+    }
+    setConnectingCal(false)
+  }
+
+  async function disconnectCalendar(): Promise<void> {
+    onChange(await window.scribe.calendar.disconnect())
+    setCalStatus(null)
   }
 
   async function addPersonToDirectory(): Promise<void> {
@@ -249,6 +276,53 @@ export function SettingsView({
                 />
               </div>
             </div>
+          )}
+        </div>
+      </section>
+
+      <section className="settings-section">
+        <header className="settings-label">
+          <h2>Calendar</h2>
+          <p className="hint">
+            Read-only, via your calendar&apos;s secret iCal address, stored encrypted on this
+            machine. Powers the Today view and titles recordings after their events. In Outlook on
+            the web: Settings → Calendar → Shared calendars → Publish a calendar, then copy the ICS
+            link. In Google Calendar: your calendar&apos;s settings → Integrate calendar → Secret
+            address in iCal format.
+          </p>
+        </header>
+        <div className="settings-body">
+          {settings.hasCalendar ? (
+            <div className="field-row">
+              <span className="badge badge-quiet">Calendar connected ✓</span>
+              <button className="btn btn-ghost btn-danger" onClick={disconnectCalendar}>
+                Remove
+              </button>
+            </div>
+          ) : (
+            <div className="field-row">
+              <input
+                className="text-input"
+                type="password"
+                placeholder="https://…/calendar.ics"
+                value={calDraft}
+                onChange={(e) => setCalDraft(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && connectCalendar()}
+                aria-label="Calendar iCal address"
+              />
+              <button
+                className="btn btn-primary"
+                onClick={connectCalendar}
+                disabled={connectingCal || !calDraft.trim()}
+              >
+                {connectingCal ? 'Checking…' : 'Connect'}
+              </button>
+            </div>
+          )}
+          {calStatus && (
+            <p className={`field-note ${calStatus.ok ? 'ok' : 'error'}`} role="status">
+              {calStatus.msg}
+            </p>
           )}
         </div>
       </section>

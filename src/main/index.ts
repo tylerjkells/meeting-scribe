@@ -27,7 +27,8 @@ import {
   meetingDir,
   recoverOrphanedRecordings
 } from './store'
-import { getSettings, updateSettings, setApiKey, addPerson } from './settings'
+import { getSettings, updateSettings, setApiKey, setCalendarUrl, addPerson } from './settings'
+import { refreshCalendar, getTodayEvents, findLiveEvent, clearCalendarCache } from './calendar'
 import { engineStatus, setupEngine } from './whisper'
 import { processMeeting, summarizeMeeting } from './pipeline'
 import { askAboutMeeting, testApiKey } from './summarize'
@@ -216,6 +217,17 @@ function registerIpc(): void {
       energy: EnergySample[] | null
     ) => {
       const meeting = await finishRecording(id, Buffer.from(webm), durationMs, energy)
+      // recording made during a calendar event inherits its title (the
+      // summarizer keeps non-default titles, so this survives auto-titling)
+      try {
+        const event = await findLiveEvent(meeting.createdAt)
+        if (event) {
+          meeting.title = event.title
+          writeMeeting(meeting)
+        }
+      } catch {
+        // calendar unreachable: keep the default title
+      }
       // fire-and-forget: transcribe + summarize in the background
       processMeeting(id)
       return meeting
@@ -328,6 +340,34 @@ function registerIpc(): void {
     meeting.qa = [...(meeting.qa ?? []), { q: question, a: answer }]
     writeMeeting(meeting)
     return answer
+  })
+
+  // --- calendar ---
+  ipcMain.handle('calendar:connect', async (_e, url: string) => {
+    setCalendarUrl(url)
+    clearCalendarCache()
+    try {
+      const events = await refreshCalendar(true)
+      return { ok: true, countThisWeek: events.length }
+    } catch (err) {
+      setCalendarUrl(null)
+      return { ok: false, error: err instanceof Error ? err.message : 'Could not read that feed.' }
+    }
+  })
+  ipcMain.handle('calendar:disconnect', () => {
+    clearCalendarCache()
+    return setCalendarUrl(null)
+  })
+  ipcMain.handle('calendar:today', async () => {
+    if (!getSettings().hasCalendar) return { events: [] }
+    try {
+      return { events: await getTodayEvents() }
+    } catch (err) {
+      return {
+        events: [],
+        error: err instanceof Error ? err.message : 'The calendar feed could not be reached.'
+      }
+    }
   })
 
   // --- library-wide Q&A ---
