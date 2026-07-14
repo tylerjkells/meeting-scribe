@@ -40,6 +40,26 @@ export interface MeetingQA {
   a: string
 }
 
+/** one cited meeting under a library-wide answer */
+export interface AskSource {
+  /** marker used inline in the answer text, e.g. 1 for [1] */
+  ref: number
+  meetingId: string
+  /** resolved at answer time so history renders even if the meeting is later deleted */
+  meetingTitle: string
+  createdAt: string
+  /** moment in the meeting that best supports the answer, if the model tied it to one */
+  timestampMs: number | null
+}
+
+/** one Q&A exchange in the library-wide Ask page */
+export interface LibraryQA {
+  q: string
+  a: string
+  sources: AskSource[]
+  askedAt: string
+}
+
 /** a single action item in the cross-meeting rollup */
 export interface ActionRollupItem {
   meetingId: string

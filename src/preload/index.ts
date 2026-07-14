@@ -5,6 +5,7 @@ import type {
   EnergySample,
   EngineProgress,
   EngineStatus,
+  LibraryQA,
   Meeting,
   MeetingListItem,
   RecordingMode,
@@ -95,6 +96,11 @@ const api = {
       ipcRenderer.on('meeting:updated', handler)
       return () => ipcRenderer.removeListener('meeting:updated', handler)
     }
+  },
+  ask: {
+    history: (): Promise<LibraryQA[]> => ipcRenderer.invoke('ask:history'),
+    ask: (question: string): Promise<LibraryQA> => ipcRenderer.invoke('ask:ask', question),
+    clear: (): Promise<void> => ipcRenderer.invoke('ask:clear')
   },
   actions: {
     list: (): Promise<ActionRollupItem[]> => ipcRenderer.invoke('actions:list'),

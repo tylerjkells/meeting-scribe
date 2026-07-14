@@ -429,7 +429,17 @@ button:disabled {
 
 .empty-state p {
   max-width: 44ch;
-  margin: 0 auto var(--s5);
+  margin: 0 auto;
+}
+
+.empty-state .btn-primary {
+  margin-top: var(--s5);
+  padding: 10px 22px;
+}
+
+/* beats the `.empty-state p` margin reset above (higher specificity) */
+.empty-state p.empty-alt {
+  margin-top: var(--s4);
 }
 
 /* ---------- record view ---------- */
@@ -999,35 +1009,58 @@ select.text-input {
 
 /* ---------- settings layout ---------- */
 
+/* Label-left, controls-right sections split by hairlines: one vertical
+   axis for every control and a predictable top-to-bottom scan order. */
+
 .settings-wrap {
-  max-width: 1060px;
+  max-width: 900px;
 }
 
-.settings-grid {
+.settings-section {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: var(--s4);
-  align-items: start;
+  grid-template-columns: 230px minmax(0, 560px);
+  column-gap: var(--s7);
+  padding: var(--s6) 0;
 }
 
-.settings-card {
-  border: 1px solid var(--line-soft);
-  border-radius: var(--r-card);
-  padding: var(--s5);
-  display: flex;
-  flex-direction: column;
-  gap: var(--s3);
+.settings-section:first-of-type {
+  padding-top: var(--s2);
 }
 
-.settings-card > h2 {
+.settings-section + .settings-section {
+  border-top: 1px solid var(--line-soft);
+}
+
+.settings-label h2 {
   font-size: 15px;
 }
 
-.settings-card > .hint {
+.settings-label .hint {
   color: var(--ink-faint);
   font-size: 12.5px;
+  margin-top: var(--s2);
+  text-wrap: pretty;
+}
+
+.settings-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  min-width: 0;
+}
+
+.settings-body .hint {
+  color: var(--ink-soft);
+  font-size: 13px;
   margin: 0;
-  max-width: 58ch;
+}
+
+/* narrow window: label stacks above its controls */
+@media (max-width: 1120px) {
+  .settings-section {
+    grid-template-columns: 1fr;
+    row-gap: var(--s4);
+  }
 }
 
 .card-subhead {
@@ -1404,6 +1437,83 @@ select.text-input {
   margin-top: var(--s3);
 }
 
+/* ---------- ask across meetings ---------- */
+
+.ask-hint {
+  color: var(--ink-faint);
+  font-size: 13px;
+  max-width: 58ch;
+  margin-bottom: var(--s5);
+}
+
+.ask-examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  max-width: 68ch;
+  margin-bottom: var(--s5);
+}
+
+.ask-thread {
+  max-width: 72ch;
+}
+
+.ask-thinking {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  color: var(--ink-faint);
+}
+
+.ask-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin-top: var(--s2);
+}
+
+.source-chip {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line-soft);
+  background: var(--bg-raised);
+  color: var(--ink-soft);
+  transition:
+    background var(--t-fast) var(--ease-out),
+    border-color var(--t-fast) var(--ease-out),
+    color var(--t-fast) var(--ease-out);
+}
+
+.source-chip:hover {
+  background: var(--bg-overlay);
+  border-color: var(--accent-dim);
+  color: var(--ink);
+}
+
+.source-chip .source-ref {
+  color: var(--accent-strong);
+  font-weight: 700;
+  margin-right: 5px;
+}
+
+/* segment cited by an Ask answer: flares on arrival, then stays marked
+   until you leave the page */
+.transcript-seg.cited {
+  background: var(--accent-tint);
+  animation: seg-flash 1.6s var(--ease-out);
+}
+
+@keyframes seg-flash {
+  0% {
+    background: oklch(0.63 0.17 27 / 0.3);
+  }
+  100% {
+    background: var(--accent-tint);
+  }
+}
+
 /* ---------- transcript import ---------- */
 
 .import-hint {
@@ -1457,7 +1567,6 @@ input[type='date'] {
 }
 
 .empty-alt {
-  margin-top: var(--s4);
   font-size: 13px;
   color: var(--ink-faint);
 }

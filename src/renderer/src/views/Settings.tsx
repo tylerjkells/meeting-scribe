@@ -129,14 +129,15 @@ export function SettingsView({
         <h1>Settings</h1>
       </div>
 
-      <div className="settings-grid">
-        <section className="settings-card">
+      <section className="settings-section">
+        <header className="settings-label">
           <h2>AI summaries</h2>
           <p className="hint">
             Billed per use by Anthropic, typically 1–5 cents per meeting. Keys come from
             console.anthropic.com and are stored encrypted on this machine.
           </p>
-
+        </header>
+        <div className="settings-body">
           {settings.hasApiKey ? (
             <div className="field-row">
               <span className="badge badge-quiet">API key saved ✓</span>
@@ -204,14 +205,18 @@ export function SettingsView({
               <span className="switch-knob" aria-hidden="true" />
             </button>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section className="settings-card">
+      <section className="settings-section">
+        <header className="settings-label">
           <h2>Transcription</h2>
           <p className="hint">
             Runs entirely on this machine; audio never leaves it. Picking a model you haven&apos;t
             downloaded fetches it first.
           </p>
+        </header>
+        <div className="settings-body">
           <div className="opt-list" role="radiogroup" aria-label="Transcription model">
             {WHISPER_MODELS.map((m) => (
               <OptRow
@@ -245,14 +250,18 @@ export function SettingsView({
               </div>
             </div>
           )}
-        </section>
+        </div>
+      </section>
 
-        <section className="settings-card">
+      <section className="settings-section">
+        <header className="settings-label">
           <h2>Team directory</h2>
           <p className="hint">
             Offered when assigning action items. Assigning a new name or naming a speaker adds
             people here automatically.
           </p>
+        </header>
+        <div className="settings-body">
           <div className="field-row">
             <input
               className="text-input"
@@ -290,10 +299,18 @@ export function SettingsView({
           ) : (
             <p className="opt-desc">Nobody yet. Add your usual meeting crowd.</p>
           )}
-        </section>
+        </div>
+      </section>
 
-        <section className="settings-card">
+      <section className="settings-section">
+        <header className="settings-label">
           <h2>Storage</h2>
+          <p className="hint">
+            Meetings live on this machine only. Reclaim space from any meeting&apos;s page with
+            &ldquo;Delete audio, keep notes&rdquo;.
+          </p>
+        </header>
+        <div className="settings-body">
           {storage && storage.count > 0 ? (
             <>
               <p className="hint">
@@ -313,16 +330,18 @@ export function SettingsView({
                 <span className="legend-dot rest" /> Transcripts &amp; notes{' '}
                 {formatBytes(Math.max(0, storage.totalBytes - storage.audioBytes))}
               </p>
-              <p className="opt-desc">
-                Reclaim space from any meeting&apos;s page with &ldquo;Delete audio, keep
-                notes&rdquo;. Notes are tiny and stay searchable forever.
-              </p>
             </>
           ) : (
-            <p className="hint">No meetings stored yet.</p>
+            <p className="opt-desc">No meetings stored yet.</p>
           )}
+        </div>
+      </section>
 
-          <div className="card-subhead">About</div>
+      <section className="settings-section">
+        <header className="settings-label">
+          <h2>About</h2>
+        </header>
+        <div className="settings-body">
           <p className="opt-desc">
             MeetingScribe {version ? `v${version}` : ''} · updates install automatically from{' '}
             <a href="https://github.com/tylerjkells/meeting-scribe/releases" target="_blank" rel="noreferrer">
@@ -331,8 +350,8 @@ export function SettingsView({
             . Nothing leaves this machine except the text sent to Claude for summaries and
             questions.
           </p>
-        </section>
-      </div>
+        </div>
+      </section>
     </div>
   )
 }

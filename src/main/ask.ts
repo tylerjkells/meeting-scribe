@@ -1,0 +1,326 @@
+import Anthropic from '@anthropic-ai/sdk'
+import { app } from 'electron'
+import { readFileSync, writeFileSync } from 'fs'
+import { join } from 'path'
+import { getApiKey } from './settings'
+import { listMeetings, readMeeting } from './store'
+import { transcriptToText } from './summarize'
+import type { AskSource, LibraryQA, Meeting } from '../shared/types'
+
+// ---------------------------------------------------------------------------
+// Library-wide Q&A: answer questions across every meeting in the library.
+//
+// Two stages keep this cheap. Stage 1 sends only a compact catalog (title,
+// date, summary bullets per meeting) and asks the model which meetings'
+// transcripts it actually needs. Stage 2 sends those transcripts — capped —
+// and produces a grounded answer with citations back to specific meetings.
+// A typical question costs a few cents with Haiku even on a large library.
+// ---------------------------------------------------------------------------
+
+/** most transcripts the answer stage will read in full */
+const MAX_SELECTED = 4
+/** per-meeting transcript budget for the answer stage (chars) */
+const PER_MEETING_CHARS = 60_000
+/** recent exchanges carried into follow-up questions */
+const HISTORY_TURNS = 6
+
+function historyPath(): string {
+  return join(app.getPath('userData'), 'ask.json')
+}
+
+export function readAskHistory(): LibraryQA[] {
+  try {
+    return JSON.parse(readFileSync(historyPath(), 'utf-8')) as LibraryQA[]
+  } catch {
+    return []
+  }
+}
+
+export function clearAskHistory(): void {
+  writeFileSync(historyPath(), '[]')
+}
+
+const SELECT_SCHEMA = {
+  type: 'object',
+  properties: {
+    meetingIds: {
+      type: 'array',
+      items: { type: 'string' },
+      description:
+        'IDs (e.g. "m3") of the meetings whose full transcripts are needed to answer, most relevant first. At most 4. Empty if the catalog alone already answers the question.'
+    }
+  },
+  required: ['meetingIds'],
+  additionalProperties: false
+} as const
+
+const ANSWER_SCHEMA = {
+  type: 'object',
+  properties: {
+    answer: {
+      type: 'string',
+      description:
+        'The answer in plain prose. Cite supporting meetings inline with bracketed markers like [1] or [2] that match the ref numbers in sources.'
+    },
+    sources: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          ref: {
+            type: 'number',
+            description: 'The marker number used inline in the answer, starting at 1'
+          },
+          meetingId: {
+            type: 'string',
+            description: 'The id of the cited meeting, e.g. "m3"'
+          },
+          quote: {
+            anyOf: [{ type: 'string' }, { type: 'null' }],
+            description:
+              'A short excerpt (roughly 5-20 words) copied verbatim from the cited transcript line that best supports this citation, or null when the citation refers to the meeting as a whole'
+          },
+          timestampMs: {
+            anyOf: [{ type: 'number' }, { type: 'null' }],
+            description:
+              'The [m:ss] transcript timestamp of that line, converted to milliseconds, or null when the citation is not tied to one moment'
+          }
+        },
+        required: ['ref', 'meetingId', 'quote', 'timestampMs'],
+        additionalProperties: false
+      },
+      description: 'Every meeting cited in the answer. Empty only if nothing was found.'
+    }
+  },
+  required: ['answer', 'sources'],
+  additionalProperties: false
+} as const
+
+/** meetings that have anything to ask about, newest first */
+function loadAskableMeetings(): Meeting[] {
+  const meetings: Meeting[] = []
+  for (const entry of listMeetings()) {
+    const m = readMeeting(entry.id)
+    if (!m) continue
+    if ((m.transcript?.length ?? 0) > 0 || m.summary) meetings.push(m)
+  }
+  return meetings
+}
+
+/**
+ * Compact one-meeting catalog entry. Short aliases (m1, m2, …) stand in for
+ * the long meeting ids so the model can reference them reliably and cheaply.
+ */
+function catalogEntry(alias: string, m: Meeting): string {
+  const lines: string[] = [
+    `id: ${alias}`,
+    `title: ${m.title}`,
+    `date: ${m.createdAt.slice(0, 10)}`,
+    `duration: ${Math.round(m.durationMs / 60000)} min`
+  ]
+  const s = m.summary
+  if (s) {
+    lines.push(`tldr: ${s.tldr}`)
+    if (s.decisions.length > 0) lines.push(`decisions: ${s.decisions.join(' | ')}`)
+    if (s.actionItems.length > 0) {
+      lines.push(
+        `action items: ${s.actionItems
+          .map((a) => `${a.task}${a.owner ? ` (${a.owner}${a.due ? `, ${a.due}` : ''})` : ''}`)
+          .join(' | ')}`
+      )
+    }
+    if (s.openQuestions.length > 0) lines.push(`open questions: ${s.openQuestions.join(' | ')}`)
+  } else {
+    lines.push('tldr: (no summary yet; transcript only)')
+  }
+  return lines.join('\n')
+}
+
+/** middle-truncate long transcripts so a marathon meeting cannot blow the budget */
+function boundedTranscript(m: Meeting): string {
+  const text = transcriptToText(m.transcript ?? [], m.speakerNames)
+  if (text.length <= PER_MEETING_CHARS) return text
+  const half = Math.floor(PER_MEETING_CHARS / 2)
+  return `${text.slice(0, half)}\n… [middle of transcript trimmed for length] …\n${text.slice(-half)}`
+}
+
+function normalizeForMatch(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/**
+ * Find the transcript segment containing a quoted excerpt and return its
+ * start time. Models copy text far more reliably than they convert
+ * timestamps, so a located quote beats the model's own timestamp.
+ */
+function locateQuote(m: Meeting, quote: string): number | null {
+  const segs = m.transcript ?? []
+  const nq = normalizeForMatch(quote)
+  if (nq.length < 8 || segs.length === 0) return null
+  // one running haystack so quotes spanning segment boundaries still match
+  let haystack = ''
+  const starts: number[] = []
+  for (const s of segs) {
+    starts.push(haystack.length)
+    haystack += normalizeForMatch(s.text) + ' '
+  }
+  for (const probe of [nq, nq.slice(0, 60), nq.slice(-60)]) {
+    if (probe.length < 8) continue
+    const pos = haystack.indexOf(probe)
+    if (pos < 0) continue
+    let idx = 0
+    for (let i = 0; i < starts.length && starts[i] <= pos; i++) idx = i
+    return segs[idx].from
+  }
+  return null
+}
+
+/** align a model-provided time to the start of the segment it falls in */
+function snapToSegment(m: Meeting, ms: number): number {
+  const segs = m.transcript ?? []
+  const hit = segs.find((s) => ms >= s.from && ms < s.to)
+  if (hit) return hit.from
+  let best = ms
+  let bestDist = Infinity
+  for (const s of segs) {
+    const dist = Math.abs(s.from - ms)
+    if (dist < bestDist) {
+      bestDist = dist
+      best = s.from
+    }
+  }
+  return best
+}
+
+function recentHistoryMessages(): { role: 'user' | 'assistant'; content: string }[] {
+  return readAskHistory()
+    .slice(-HISTORY_TURNS)
+    .flatMap((x) => [
+      { role: 'user' as const, content: x.q },
+      { role: 'assistant' as const, content: x.a }
+    ])
+}
+
+/** Answer a question across the whole meeting library, with citations. */
+export async function askLibrary(question: string, model: string): Promise<LibraryQA> {
+  const apiKey = getApiKey()
+  if (!apiKey) {
+    throw new Error('No Claude API key set. Add one in Settings first.')
+  }
+  const meetings = loadAskableMeetings()
+  if (meetings.length === 0) {
+    throw new Error('No meetings to ask about yet. Record or import one first.')
+  }
+
+  const client = new Anthropic({ apiKey })
+  const aliases = new Map<string, Meeting>()
+  meetings.forEach((m, i) => aliases.set(`m${i + 1}`, m))
+  const catalog = [...aliases.entries()].map(([alias, m]) => catalogEntry(alias, m)).join('\n\n')
+  const history = recentHistoryMessages()
+
+  // Stage 1: pick which transcripts the answer actually needs. With a handful
+  // of meetings the selection round-trip costs more than it saves — send all.
+  const withTranscripts = [...aliases.entries()].filter(([, m]) => (m.transcript?.length ?? 0) > 0)
+  let selected: [string, Meeting][]
+  if (withTranscripts.length <= MAX_SELECTED) {
+    selected = withTranscripts
+  } else {
+    const sel = await client.messages.create({
+      model,
+      max_tokens: 1024,
+      system:
+        'You route questions over a personal library of meeting notes. Given the catalog below and a question, ' +
+        'pick which meetings\' full transcripts are needed to answer it well. Prefer fewer, more relevant meetings. ' +
+        `Catalog entries marked "transcript only" still have transcripts available.\n\n<catalog>\n${catalog}\n</catalog>`,
+      output_config: {
+        format: {
+          type: 'json_schema',
+          schema: SELECT_SCHEMA as unknown as Record<string, unknown>
+        }
+      },
+      messages: [...history, { role: 'user', content: question }]
+    })
+    if (sel.stop_reason === 'refusal') {
+      throw new Error('The request was declined by the model.')
+    }
+    const text = sel.content.find((b) => b.type === 'text')?.text
+    const ids = text ? (JSON.parse(text) as { meetingIds: string[] }).meetingIds : []
+    selected = ids
+      .filter((id) => aliases.has(id) && (aliases.get(id)!.transcript?.length ?? 0) > 0)
+      .slice(0, MAX_SELECTED)
+      .map((id) => [id, aliases.get(id)!])
+  }
+
+  // Stage 2: answer from the selected transcripts (plus the catalog, so the
+  // model keeps global awareness of meetings it did not open).
+  const transcriptBlocks = selected
+    .map(
+      ([alias, m]) =>
+        `<meeting id="${alias}" title="${m.title}" date="${m.createdAt.slice(0, 10)}">\n${boundedTranscript(m)}\n</meeting>`
+    )
+    .join('\n\n')
+
+  const response = await client.messages.create({
+    model,
+    max_tokens: 4096,
+    system:
+      'You answer questions across a personal library of meeting recordings for the person who attended them. ' +
+      'Ground every answer in the catalog and transcripts below; when they do not contain the answer, say so plainly instead of guessing. ' +
+      'Transcripts are automatic speech recognition output and may contain errors. ' +
+      'In transcripts, speaker labels mark audio sources: the first-named label (often "Me") is the person asking you questions now; the other label is everyone else on that call. ' +
+      'Answer concisely in plain prose. Cite the meetings that support each part of the answer with inline markers like [1], and list each cited meeting in sources with its id. ' +
+      'When several meetings touch the topic over time, prefer the most recent position and note how it evolved.\n\n' +
+      `<catalog>\n${catalog}\n</catalog>` +
+      (transcriptBlocks ? `\n\nFull transcripts of the most relevant meetings:\n\n${transcriptBlocks}` : ''),
+    output_config: {
+      format: {
+        type: 'json_schema',
+        schema: ANSWER_SCHEMA as unknown as Record<string, unknown>
+      }
+    },
+    messages: [...history, { role: 'user', content: question }]
+  })
+
+  if (response.stop_reason === 'refusal') {
+    throw new Error('The request was declined by the model.')
+  }
+  const text = response.content.find((b) => b.type === 'text')?.text
+  if (!text) throw new Error('Empty response from Claude')
+  const parsed = JSON.parse(text) as {
+    answer: string
+    sources: { ref: number; meetingId: string; quote: string | null; timestampMs: number | null }[]
+  }
+
+  const sources: AskSource[] = []
+  for (const s of parsed.sources) {
+    const m = aliases.get(s.meetingId)
+    if (!m || sources.some((x) => x.ref === s.ref)) continue
+    // prefer the located quote; fall back to the model's own timestamp
+    const located = s.quote ? locateQuote(m, s.quote) : null
+    const claimed =
+      typeof s.timestampMs === 'number' && s.timestampMs >= 0 && s.timestampMs <= m.durationMs
+        ? snapToSegment(m, s.timestampMs)
+        : null
+    sources.push({
+      ref: s.ref,
+      meetingId: m.id,
+      meetingTitle: m.title,
+      createdAt: m.createdAt,
+      timestampMs: located ?? claimed
+    })
+  }
+  sources.sort((a, b) => a.ref - b.ref)
+
+  const record: LibraryQA = {
+    q: question,
+    a: parsed.answer,
+    sources,
+    askedAt: new Date().toISOString()
+  }
+  writeFileSync(historyPath(), JSON.stringify([...readAskHistory(), record], null, 2))
+  return record
+}

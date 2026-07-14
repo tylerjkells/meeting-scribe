@@ -31,6 +31,7 @@ import { getSettings, updateSettings, setApiKey, addPerson } from './settings'
 import { engineStatus, setupEngine } from './whisper'
 import { processMeeting, summarizeMeeting } from './pipeline'
 import { askAboutMeeting, testApiKey } from './summarize'
+import { askLibrary, clearAskHistory, readAskHistory } from './ask'
 import { createImportedMeeting } from './importer'
 import { patchLegacyAudioDurations } from './migrate'
 import type {
@@ -328,6 +329,13 @@ function registerIpc(): void {
     writeMeeting(meeting)
     return answer
   })
+
+  // --- library-wide Q&A ---
+  ipcMain.handle('ask:history', () => readAskHistory())
+  ipcMain.handle('ask:ask', (_e, question: string) =>
+    askLibrary(question, getSettings().claudeModel)
+  )
+  ipcMain.handle('ask:clear', () => clearAskHistory())
 
   ipcMain.handle('actions:list', (): ActionRollupItem[] => {
     const items: ActionRollupItem[] = []

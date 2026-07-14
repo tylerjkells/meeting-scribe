@@ -1,0 +1,21 @@
+[00:04] Me: Alright, it's 10 o'clock, let's get going. Agenda is summer B numbers, the enrollment dashboard question, and section caps for fall.
+[00:21] Priya: Summer B first. We're at 412 enrolled against a target of 450. Melt has been worse than last year, we lost 31 deposits since May.
+[00:48] Me: Is that concentrated anywhere?
+[00:55] Priya: Mostly the MBA and the counseling program. The counseling one I think is the new licensure messaging scaring people, but I don't have data on that yet.
+[01:20] David: I can pull the withdrawal survey responses from Slate and see if licensure comes up. Give me until Friday.
+[01:33] Me: Good, thanks David. Okay, the dashboard. We keep hand-building the Monday enrollment spreadsheet and it eats half of Priya's morning every week.
+[01:52] Priya: It's about two hours by the time I reconcile Banner against Slate.
+[02:04] Me: So proposal on the table is we build a proper enrollment dashboard. IT says we have Power BI licenses already sitting in the Microsoft agreement.
+[02:22] David: My worry with Power BI is nobody on our team actually knows it. Marcus built things in Tableau at his last job.
+[02:37] Me: Tableau costs money we didn't budget. Let's decide: we go with Power BI since the licenses are free, and IT owes us a refresh from the Banner extract nightly. If it's unusable in a month we revisit.
+[03:05] Priya: Fine by me. I'll write up the field list we need this week, the same columns as the Monday spreadsheet.
+[03:19] Me: Decision made then, Power BI it is. Action items: Priya sends the field list to IT by Thursday, David pulls withdrawal survey data by Friday.
+[03:40] David: On section caps, quick flag. Three of the education sections for fall are already at 90 percent and it's only mid-June.
+[03:58] Me: Which ones?
+[04:02] David: Curriculum Design, both online sections, and Assessment Methods.
+[04:12] Me: Can we open new sections without new adjuncts?
+[04:19] David: Not for Assessment Methods. We'd need at least one adjunct hire and the posting takes three weeks minimum through HR.
+[04:36] Me: Okay, let's not sit on that. I'll raise the adjunct posting with the dean this week and get the requisition moving.
+[04:52] Priya: One open question before we wrap. Do we know if the tuition deadline is moving for fall? Bursar was making noises about pulling it a week earlier.
+[05:08] Me: I haven't heard anything final. Leave it as an open question, I'll ask at the directors meeting.
+[05:20] Me: Alright, that's time. Same time next week, but skipping the 23rd for the retreat, so next real one is the 30th.

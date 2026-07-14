@@ -6,6 +6,7 @@ Record, transcribe, and AI-summarize your meetings — locally, privately, and w
 - **Transcribe** on your own machine with [whisper.cpp](https://github.com/ggml-org/whisper.cpp). Audio never leaves your PC. $0, forever.
 - **Summarize** with the Claude API (pay-per-use — typically 1–5 cents per meeting with Haiku): TL;DR, key points, decisions, action items with owners/due dates, and open questions. Meetings are auto-titled from their content.
 - **Ask about a meeting** — a Q&A box on each meeting page, grounded in that meeting's transcript.
+- **Ask across everything** — a library-wide Ask page that answers from all your meetings at once ("What did we decide about X?", "What has David committed to?"), with citations linking back to the source meetings.
 - **Action items rollup** — every follow-up across all meetings in one checklist, with done-tracking.
 - Pause/resume while recording, search the library (press `/`), copy summaries as Markdown, export full meetings to `.md`.
 

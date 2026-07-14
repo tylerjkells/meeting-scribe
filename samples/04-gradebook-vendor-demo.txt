@@ -1,0 +1,20 @@
+[00:05] Me: Thanks for making time. Joining from our side we've got myself, Priya from enrollment operations, and Marcus who handles our analytics.
+[00:18] Sandra: Great to meet you all, I'm Sandra Whitfield, account exec at GradeSync, and I've got our solutions engineer Tom on with me. I know you're a Canvas shop, so everything you'll see today is running against a live Canvas sandbox.
+[00:40] Tom: Sharing my screen. The core pitch is one gradebook sync layer between Canvas and your SIS, so faculty enter grades once and Banner gets them within the hour, no CSV exports.
+[01:02] Me: That export step is exactly our pain point. End of every term we get grade file errors and it takes the registrar's office most of a week to reconcile.
+[01:18] Tom: Typical. So here's a live pass-through. I'll post a grade change in Canvas, and you can watch it hit the Banner test instance. About forty seconds end to end.
+[01:41] Marcus: What happens on conflicts? Say the registrar corrected a grade directly in Banner and then faculty edits it in Canvas.
+[01:53] Tom: Banner-side edits win by default and the Canvas edit gets flagged for manual review. That default is configurable per role.
+[02:07] Priya: Does it handle incompletes converting to letter grades on a timer? That's a manual chase for us every term.
+[02:16] Tom: Yes, there's a rules engine, incomplete-to-F after your deadline with exceptions per college. I'll show that.
+[02:31] Me: Let's talk numbers, Sandra. What are we looking at for roughly 6,000 online enrollments?
+[02:42] Sandra: List is $2.40 per enrollment per year, so about $14,400. For a first-year commitment signed before September 30 we can do $1.90, call it $11,400, implementation included.
+[03:04] Me: And implementation timeline?
+[03:09] Sandra: Six weeks typical. Sign by early August and you're live for fall grading in December.
+[03:19] Marcus: I'd want a security review before anything. FERPA posture, where grade data rests, SOC 2 report.
+[03:30] Sandra: We'll send the SOC 2 and our data flow diagram today. Data rests encrypted in US East, we never store more than 30 days of history.
+[03:45] Me: Here's where I land. I'm not signing off a demo, but I'm interested. Can you do a no-cost pilot with one college for the October mini-term?
+[04:00] Sandra: We can do a 90-day pilot with up to 500 enrollments at no cost, yes.
+[04:08] Me: Then that's our path. No purchase decision today. Next steps: Sandra sends the SOC 2 and pilot agreement, Marcus runs the security review with our IT office, and I'll socialize the pilot idea with the registrar. We'll regroup mid-August.
+[04:32] Sandra: Perfect, you'll have the documents by end of day.
+[04:37] Me: Thanks both, good demo.

@@ -1,0 +1,21 @@
+[00:05] Me: This is the first proper launch planning meeting for the MS in data analytics, January cohort. In the room: me, Marcus, Priya, and Dr. Okafor joining as interim program director.
+[00:22] Dr. Okafor: Happy to be drafted. Where do we stand on approvals?
+[00:28] Me: State approved in May, accreditor acknowledged in June. The last gate is the faculty senate curriculum vote on July 22, which should be a formality but nothing exists until it passes.
+[00:45] Dr. Okafor: The vote covers all ten courses?
+[00:49] Me: All ten, plus the two-course Python bootcamp for students without programming background.
+[00:58] Priya: Enrollment mechanics. Applications open in Slate August 1, priority deadline December 1, final deadline December 15. Target is 25 students for the January cohort, break-even is 18.
+[01:20] Me: Marketing locked analytics into the top campaign tier yesterday, 30 percent of the fall digital budget, campaign live August 11. So the demand side is funded.
+[01:34] Dr. Okafor: Staffing is my worry. Ten courses, we have four covered by existing faculty. The other six need three new adjuncts at two courses each.
+[01:50] Me: What's the hiring runway for spring?
+[01:55] Dr. Okafor: Postings need to be live by September 1 to have contracts signed by November. I'll write the three job descriptions by August 15.
+[02:08] Me: David's been running the education adjunct posting through HR, I'll have him share what's worked. HR is the bottleneck, assume three weeks minimum per posting.
+[02:22] Marcus: Two data things from me. First, the new enrollment dashboard going live July 14 will have an analytics program filter from day one, so we can watch the funnel weekly from August.
+[02:38] Priya: That'll be the first program we can track from launch. Nice.
+[02:44] Marcus: Second, we need to decide the applicant review workflow in Slate. Committee review like the MBA, or rolling director review?
+[02:56] Dr. Okafor: Rolling. A January start can't wait on monthly committee cycles. I'll review weekly and flag borderline files to a second reader.
+[03:09] Me: Decision: rolling admissions with weekly director review. Priya, can Slate be configured that way by August 1?
+[03:19] Priya: Yes, it mirrors what we did for the certificate programs. Two days of work, I'll have it done by July 28.
+[03:29] Me: Open questions before we close. Tuition discount for the first cohort, yes or no? I've heard arguments both ways and it's ultimately the dean's call.
+[03:43] Dr. Okafor: I'll raise it with the dean this month, we need the answer before the campaign copy finalizes.
+[03:52] Me: Action items: Okafor writes three adjunct job descriptions by August 15 and raises the first-cohort discount with the dean. Priya configures rolling review in Slate by July 28. Marcus ships the dashboard with a program filter July 14. I send curriculum copy to marketing by July 24 after the vote.
+[04:18] Me: Next launch check-in first week of August. Thanks all.
