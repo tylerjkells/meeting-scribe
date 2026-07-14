@@ -6,6 +6,7 @@ import type {
   EnergySample,
   EngineProgress,
   EngineStatus,
+  EventBrief,
   LibraryQA,
   Meeting,
   MeetingListItem,
@@ -89,6 +90,8 @@ const api = {
       ipcRenderer.invoke('meetings:import', title, dateIso, text),
     search: (query: string): Promise<{ id: string; snippet: string }[]> =>
       ipcRenderer.invoke('meetings:search', query),
+    briefFor: (eventTitle: string): Promise<EventBrief | null> =>
+      ipcRenderer.invoke('meetings:briefFor', eventTitle),
     deleteAudio: (id: string): Promise<Meeting | null> =>
       ipcRenderer.invoke('meetings:deleteAudio', id),
     storageStats: (): Promise<StorageStats> => ipcRenderer.invoke('meetings:storageStats'),
@@ -96,6 +99,13 @@ const api = {
       const handler = (_e: unknown, m: Meeting): void => cb(m)
       ipcRenderer.on('meeting:updated', handler)
       return () => ipcRenderer.removeListener('meeting:updated', handler)
+    }
+  },
+  nudge: {
+    onOpenRecord: (cb: () => void): (() => void) => {
+      const handler = (): void => cb()
+      ipcRenderer.on('nudge:openRecord', handler)
+      return () => ipcRenderer.removeListener('nudge:openRecord', handler)
     }
   },
   calendar: {

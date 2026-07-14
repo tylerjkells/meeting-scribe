@@ -1,15 +1,12 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type {
   ActionRollupItem,
   AppSettings,
   CalendarEvent,
+  EventBrief,
   MeetingListItem
 } from '../../../shared/types'
-import { formatDuration, formatWhen, MicIcon, StageBadge } from '../ui'
-
-const STOP_WORDS = new Set([
-  'the', 'and', 'for', 'with', 'meeting', 'call', 'sync', 'weekly', 'monthly', 'daily', 'check'
-])
+import { ChevronIcon, formatDuration, formatWhen, MicIcon, StageBadge } from '../ui'
 
 /**
  * The location field on virtual/hybrid events often carries platform
@@ -50,6 +47,73 @@ function isToday(iso: string): boolean {
   )
 }
 
+function BriefPanel({
+  brief,
+  onOpen
+}: {
+  brief: EventBrief
+  onOpen: (id: string) => void
+}): React.JSX.Element {
+  const decisions = brief.decisions.slice(0, 3)
+  const actions = brief.openActions.slice(0, 4)
+  const questions = brief.openQuestions.slice(0, 2)
+  const empty = decisions.length === 0 && actions.length === 0 && questions.length === 0
+  return (
+    <span className="sched-brief">
+      <button
+        className="brief-source"
+        onClick={() => onOpen(brief.meetingId)}
+        title="Open this meeting"
+      >
+        {brief.meetingTitle} · {formatWhen(brief.createdAt)} →
+      </button>
+      {decisions.length > 0 && (
+        <span className="brief-block">
+          <span className="brief-label">Decided</span>
+          <ul className="brief-list">
+            {decisions.map((d, i) => (
+              <li key={i}>{d}</li>
+            ))}
+            {brief.decisions.length > 3 && <li className="brief-more">+{brief.decisions.length - 3} more</li>}
+          </ul>
+        </span>
+      )}
+      {actions.length > 0 && (
+        <span className="brief-block">
+          <span className="brief-label">Still open</span>
+          <ul className="brief-list">
+            {actions.map((a, i) => (
+              <li key={i}>
+                {a.task}
+                {(a.owner || a.due) && (
+                  <span className="brief-owner">
+                    {' '}
+                    ({[a.owner, a.due].filter(Boolean).join(' · ')})
+                  </span>
+                )}
+              </li>
+            ))}
+            {brief.openActions.length > 4 && (
+              <li className="brief-more">+{brief.openActions.length - 4} more</li>
+            )}
+          </ul>
+        </span>
+      )}
+      {questions.length > 0 && (
+        <span className="brief-block">
+          <span className="brief-label">Open questions</span>
+          <ul className="brief-list">
+            {questions.map((q, i) => (
+              <li key={i}>{q}</li>
+            ))}
+          </ul>
+        </span>
+      )}
+      {empty && brief.tldr && <span className="brief-tldr">{brief.tldr}</span>}
+    </span>
+  )
+}
+
 export function TodayView({
   meetings,
   onOpen,
@@ -68,7 +132,9 @@ export function TodayView({
   const [calError, setCalError] = useState<string | null>(null)
   const [calLoaded, setCalLoaded] = useState(false)
   const [actions, setActions] = useState<ActionRollupItem[]>([])
-  const [related, setRelated] = useState<Map<string, string>>(new Map())
+  const [briefs, setBriefs] = useState<Map<string, EventBrief>>(new Map())
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const autoExpanded = useRef(false)
   // re-render every minute so the "Now" marker tracks the clock
   const [, tick] = useState(0)
 
@@ -84,32 +150,36 @@ export function TodayView({
     return () => clearInterval(t)
   }, [])
 
-  // link each event to the most recent related meeting in the library
+  // pre-meeting briefs: where each event's series left off last time
   useEffect(() => {
     let alive = true
     ;(async () => {
-      const map = new Map<string, string>()
+      const map = new Map<string, EventBrief>()
       for (const ev of events.filter((e) => !e.allDay)) {
-        const words = ev.title
-          .toLowerCase()
-          .replace(/[^a-z0-9 ]+/g, ' ')
-          .split(/\s+/)
-          .filter((w) => w.length > 2 && !STOP_WORDS.has(w))
-          .slice(0, 3)
-        if (words.length === 0) continue
-        const hits = await window.scribe.meetings.search(words.join(' '))
-        const hit = hits.find((h) => {
-          const m = meetings.find((x) => x.id === h.id)
-          return m && !isToday(m.createdAt)
-        })
-        if (hit) map.set(ev.id, hit.id)
+        const brief = await window.scribe.meetings.briefFor(ev.title)
+        if (brief) map.set(ev.id, brief)
       }
-      if (alive) setRelated(map)
+      if (!alive) return
+      setBriefs(map)
+      // open the brief you most likely need next: the live event, else the
+      // next upcoming one (once — user toggles are respected afterwards)
+      if (!autoExpanded.current && map.size > 0) {
+        autoExpanded.current = true
+        const now = Date.now()
+        const target =
+          events.find((e) => {
+            const s = new Date(e.start).getTime()
+            const en = new Date(e.end).getTime()
+            return !e.allDay && map.has(e.id) && now >= s && now < en
+          }) ??
+          events.find((e) => !e.allDay && map.has(e.id) && new Date(e.start).getTime() > now)
+        if (target) setExpanded(new Set([target.id]))
+      }
     })()
     return () => {
       alive = false
     }
-  }, [events, meetings])
+  }, [events])
 
   const todayMeetings = useMemo(() => meetings.filter((m) => isToday(m.createdAt)), [meetings])
   const myOpenActions = useMemo(
@@ -183,10 +253,8 @@ export function TodayView({
                 const end = new Date(ev.end).getTime()
                 const live = now >= start && now < end
                 const past = now >= end
-                const relatedId = related.get(ev.id)
-                const relatedMeeting = relatedId
-                  ? meetings.find((m) => m.id === relatedId)
-                  : undefined
+                const brief = briefs.get(ev.id)
+                const briefOpen = expanded.has(ev.id)
                 const room = cleanLocation(ev.location)
                 return (
                   <div className={`sched-row ${live ? 'live' : ''} ${past ? 'past' : ''}`} key={ev.id}>
@@ -199,7 +267,7 @@ export function TodayView({
                         {live && <span className="sched-now">Now</span>}
                         {ev.title}
                       </span>
-                      {(room || ev.joinUrl || ev.attendees.length > 0 || relatedMeeting) && (
+                      {(room || ev.joinUrl || ev.attendees.length > 0 || brief) && (
                         <span className="sched-meta">
                           {ev.joinUrl && (
                             <a className="sched-join" href={ev.joinUrl} target="_blank" rel="noreferrer">
@@ -210,17 +278,28 @@ export function TodayView({
                           {ev.attendees.length > 0 && (
                             <span title={ev.attendees.join(', ')}>{attendeeLabel(ev.attendees)}</span>
                           )}
-                          {relatedMeeting && (
+                          {brief && (
                             <button
-                              className="sched-related"
-                              onClick={() => onOpen(relatedMeeting.id)}
-                              title="Open the most recent related meeting"
+                              className="brief-toggle"
+                              onClick={() =>
+                                setExpanded((prev) => {
+                                  const next = new Set(prev)
+                                  if (next.has(ev.id)) next.delete(ev.id)
+                                  else next.add(ev.id)
+                                  return next
+                                })
+                              }
+                              aria-expanded={briefOpen}
                             >
-                              Last time: {relatedMeeting.title} · {formatWhen(relatedMeeting.createdAt)}
+                              <span className={`chevron ${briefOpen ? 'open' : ''}`} aria-hidden="true">
+                                <ChevronIcon />
+                              </span>
+                              Last met {formatWhen(brief.createdAt)}
                             </button>
                           )}
                         </span>
                       )}
+                      {brief && briefOpen && <BriefPanel brief={brief} onOpen={onOpen} />}
                     </span>
                     {live && (
                       <button className="btn btn-primary sched-record" onClick={onRecord}>

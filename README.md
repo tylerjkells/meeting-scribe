@@ -8,7 +8,8 @@ Record, transcribe, and AI-summarize your meetings — locally, privately, and w
 - **Ask about a meeting** — a Q&A box on each meeting page, grounded in that meeting's transcript.
 - **Ask across everything** — a library-wide Ask page that answers from all your meetings at once ("What did we decide about X?", "What has David committed to?"), with citations linking back to the source meetings.
 - **Action items rollup** — every follow-up across all meetings in one checklist, with done-tracking.
-- **Today view** — the home screen shows today's calendar (connect any Outlook/Google calendar via its secret iCal address, read-only), today's recordings, and your open action items. Recordings started during a calendar event are titled after it, and each event links to the most recent related meeting in your library.
+- **Today view** — the home screen shows today's calendar (connect any Outlook/Google calendar via its secret iCal address, read-only), today's recordings, and your open action items. Recordings started during a calendar event are titled after it, and each event carries a pre-meeting brief — what was decided last time, which follow-ups are still open, and unresolved questions — pulled from the most recent related meeting in your library.
+- **Record nudge** — a system notification when a calendared meeting starts and nothing is recording, so you never lose a meeting to a forgotten record button. One click lands you on the Record page.
 - Pause/resume while recording, search the library (press `/`), copy summaries as Markdown, export full meetings to `.md`.
 
 ## Running in development

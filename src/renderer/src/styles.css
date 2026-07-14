@@ -1503,6 +1503,16 @@ select.text-input {
   border-radius: var(--r-ctl);
 }
 
+/* an expanded brief makes the row tall: pin time (and Record) to the top
+   beside the title instead of floating mid-row */
+.sched-row:has(.sched-brief) {
+  align-items: flex-start;
+}
+
+.sched-row:has(.sched-brief) .sched-time {
+  padding-top: 2px;
+}
+
 .sched-row + .sched-row {
   border-top: 1px solid var(--line-soft);
 }
@@ -1573,19 +1583,83 @@ select.text-input {
   font-weight: 600;
 }
 
-.sched-related {
+.brief-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
   font-size: 12px;
+  font-weight: 600;
   color: var(--ink-faint);
+  padding: 0;
+  border-radius: 4px;
+  transition: color var(--t-fast) var(--ease-out);
+}
+
+.brief-toggle:hover {
+  color: var(--ink);
+}
+
+.sched-brief {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  margin-top: var(--s2);
+  padding: var(--s3) var(--s4);
+  background: var(--bg-raised);
+  border-radius: var(--r-ctl);
+  max-width: 62ch;
+  font-size: 12.5px;
+}
+
+.brief-source {
+  align-self: flex-start;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-soft);
   text-align: left;
   padding: 0;
   border-radius: 4px;
   transition: color var(--t-fast) var(--ease-out);
 }
 
-.sched-related:hover {
-  color: var(--ink);
-  text-decoration: underline;
-  text-underline-offset: 3px;
+.brief-source:hover {
+  color: var(--accent-strong);
+}
+
+.brief-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.brief-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-faint);
+}
+
+.brief-list {
+  margin: 0;
+  padding-left: 16px;
+  color: var(--ink-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.brief-owner {
+  color: var(--ink-faint);
+}
+
+.brief-more {
+  color: var(--ink-faint);
+  list-style: none;
+}
+
+.brief-tldr {
+  color: var(--ink-soft);
 }
 
 .sched-record {

@@ -324,6 +324,29 @@ export function SettingsView({
               {calStatus.msg}
             </p>
           )}
+          {settings.hasCalendar && (
+            <div className="switch-row">
+              <span className="switch-label">
+                <span className="opt-title">Nudge to record</span>
+                <span className="opt-desc">
+                  Notify when a meeting with a call link or room starts and nothing is recording.
+                </span>
+              </span>
+              <button
+                className={`switch ${settings.recordNudge ? 'on' : ''}`}
+                role="switch"
+                aria-checked={settings.recordNudge}
+                aria-label="Nudge to record"
+                onClick={async () =>
+                  onChange(
+                    await window.scribe.settings.update({ recordNudge: !settings.recordNudge })
+                  )
+                }
+              >
+                <span className="switch-knob" aria-hidden="true" />
+              </button>
+            </div>
+          )}
         </div>
       </section>
 

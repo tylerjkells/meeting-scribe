@@ -29,6 +29,8 @@ import {
 } from './store'
 import { getSettings, updateSettings, setApiKey, setCalendarUrl, addPerson } from './settings'
 import { refreshCalendar, getTodayEvents, findLiveEvent, clearCalendarCache } from './calendar'
+import { startRecordNudge } from './nudge'
+import { briefForEvent } from './brief'
 import { engineStatus, setupEngine } from './whisper'
 import { processMeeting, summarizeMeeting } from './pipeline'
 import { askAboutMeeting, testApiKey } from './summarize'
@@ -77,6 +79,9 @@ function createWindow(): BrowserWindow {
 protocol.registerSchemesAsPrivileged([
   { scheme: 'scribe-media', privileges: { stream: true, supportFetchAPI: true } }
 ])
+
+// Windows toasts need the app identity to match the installed shortcut
+app.setAppUserModelId('com.tylerkells.meetingscribe')
 
 app.whenReady().then(() => {
   // System-audio (loopback) capture for virtual meetings: when the renderer
@@ -142,6 +147,7 @@ app.whenReady().then(() => {
   registerIpc()
   createWindow()
   setupAutoUpdate()
+  startRecordNudge()
 
   // Repair pre-0.2.1 recordings whose webm lacks a duration header (seeking)
   patchLegacyAudioDurations().catch(() => 0)
@@ -359,6 +365,7 @@ function registerIpc(): void {
     clearCalendarCache()
     return setCalendarUrl(null)
   })
+  ipcMain.handle('meetings:briefFor', (_e, eventTitle: string) => briefForEvent(eventTitle))
   ipcMain.handle('calendar:today', async () => {
     if (!getSettings().hasCalendar) return { events: [] }
     try {

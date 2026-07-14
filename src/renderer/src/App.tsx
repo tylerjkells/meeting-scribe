@@ -43,6 +43,9 @@ export default function App(): React.JSX.Element {
 
   useEffect(() => window.scribe.update.onReady(setUpdateVersion), [])
 
+  // record-nudge notification clicked: land on the Record page
+  useEffect(() => window.scribe.nudge.onOpenRecord(() => setView({ name: 'record' })), [])
+
   const refreshMeetings = useCallback(() => {
     window.scribe.meetings.list().then(setMeetings)
   }, [])
