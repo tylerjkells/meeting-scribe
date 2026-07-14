@@ -1,13 +1,14 @@
 import { app, safeStorage } from 'electron'
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
 import { join } from 'path'
-import type { AppSettings, WhisperModel } from '../shared/types'
+import type { AppSettings, AppTheme, WhisperModel } from '../shared/types'
 
 interface StoredSettings {
   whisperModel: WhisperModel
   claudeModel: string
   autoSummarize: boolean
   recordNudge: boolean
+  theme: AppTheme
   people: string[]
   /** base64 of safeStorage-encrypted API key */
   apiKeyEncrypted: string | null
@@ -20,6 +21,7 @@ const DEFAULTS: StoredSettings = {
   claudeModel: 'claude-haiku-4-5',
   autoSummarize: true,
   recordNudge: true,
+  theme: 'studio',
   people: [],
   apiKeyEncrypted: null,
   calendarUrlEncrypted: null
@@ -57,6 +59,7 @@ export function getSettings(): AppSettings {
     claudeModel: s.claudeModel,
     autoSummarize: s.autoSummarize,
     recordNudge: s.recordNudge !== false,
+    theme: s.theme ?? 'studio',
     people: s.people ?? [],
     hasApiKey: !!s.apiKeyEncrypted,
     hasCalendar: !!s.calendarUrlEncrypted
@@ -65,7 +68,10 @@ export function getSettings(): AppSettings {
 
 export function updateSettings(
   patch: Partial<
-    Pick<AppSettings, 'whisperModel' | 'claudeModel' | 'autoSummarize' | 'recordNudge' | 'people'>
+    Pick<
+      AppSettings,
+      'whisperModel' | 'claudeModel' | 'autoSummarize' | 'recordNudge' | 'theme' | 'people'
+    >
   >
 ): AppSettings {
   const s = load()
@@ -73,6 +79,7 @@ export function updateSettings(
   if (patch.claudeModel) s.claudeModel = patch.claudeModel
   if (typeof patch.autoSummarize === 'boolean') s.autoSummarize = patch.autoSummarize
   if (typeof patch.recordNudge === 'boolean') s.recordNudge = patch.recordNudge
+  if (patch.theme) s.theme = patch.theme
   if (Array.isArray(patch.people)) {
     s.people = dedupeNames(patch.people)
   }

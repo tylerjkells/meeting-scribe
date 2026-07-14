@@ -101,6 +101,10 @@ const api = {
       return () => ipcRenderer.removeListener('meeting:updated', handler)
     }
   },
+  email: {
+    compose: (subject: string, body: string): Promise<boolean> =>
+      ipcRenderer.invoke('email:compose', subject, body)
+  },
   nudge: {
     onOpenRecord: (cb: () => void): (() => void) => {
       const handler = (): void => cb()

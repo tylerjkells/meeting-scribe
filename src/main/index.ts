@@ -45,6 +45,14 @@ import type {
   WhisperModel
 } from '../shared/types'
 
+/** pre-paint window color per theme, so launch doesn't flash the wrong shade */
+const WINDOW_BG: Record<string, string> = {
+  studio: '#101013',
+  rowan: '#17120a',
+  slate: '#101318',
+  paper: '#f8f6f3'
+}
+
 function createWindow(): BrowserWindow {
   const win = new BrowserWindow({
     width: 1120,
@@ -53,7 +61,7 @@ function createWindow(): BrowserWindow {
     minHeight: 600,
     show: false,
     autoHideMenuBar: true,
-    backgroundColor: '#101013',
+    backgroundColor: WINDOW_BG[getSettings().theme] ?? '#101013',
     title: 'MeetingScribe',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -366,6 +374,28 @@ function registerIpc(): void {
     return setCalendarUrl(null)
   })
   ipcMain.handle('meetings:briefFor', (_e, eventTitle: string) => briefForEvent(eventTitle))
+
+  // open the default mail client with a prefilled recap; mailto URLs are
+  // capped around 2KB on Windows, so long bodies are trimmed at a line break
+  ipcMain.handle('email:compose', (_e, subject: string, body: string): boolean => {
+    const MAX_URL = 1900
+    const NOTE = '\r\n[Recap trimmed to fit - the full summary is in MeetingScribe]'
+    const toUrl = (b: string): string =>
+      `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(b)}`
+    let url = toUrl(body)
+    let trimmed = false
+    if (url.length > MAX_URL) {
+      trimmed = true
+      let b = body
+      while (b.length > 40 && toUrl(b + NOTE).length > MAX_URL) {
+        const cut = b.lastIndexOf('\r\n')
+        b = cut > 40 ? b.slice(0, cut) : b.slice(0, Math.floor(b.length * 0.8))
+      }
+      url = toUrl(b + NOTE)
+    }
+    shell.openExternal(url)
+    return trimmed
+  })
   ipcMain.handle('calendar:today', async () => {
     if (!getSettings().hasCalendar) return { events: [] }
     try {

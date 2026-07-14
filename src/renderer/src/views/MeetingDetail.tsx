@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Meeting } from '../../../shared/types'
 import { BackIcon, ChevronIcon, formatDuration, formatWhen, OwnerEditor, StageBadge } from '../ui'
-import { exportFilename, meetingToMarkdown, summaryToMarkdown } from '../markdown'
+import { exportFilename, followUpEmail, meetingToMarkdown, summaryToMarkdown } from '../markdown'
 
 function Collapse({
   label,
@@ -177,6 +177,7 @@ export function MeetingView({
   const [transcriptToggled, setTranscriptToggled] = useState<boolean | null>(null)
   const [copied, setCopied] = useState(false)
   const [exportedTo, setExportedTo] = useState<string | null>(null)
+  const [emailTrimmed, setEmailTrimmed] = useState(false)
   const [knownOwners, setKnownOwners] = useState<string[]>([])
   const [playheadMs, setPlayheadMs] = useState(-1)
   const playerRef = useRef<PlayerControl | null>(null)
@@ -329,6 +330,20 @@ export function MeetingView({
                 {copied ? 'Copied ✓' : 'Copy summary'}
               </button>
             )}
+            {meeting.summary && (
+              <button
+                className="btn"
+                title="Open a recap draft in your mail app"
+                onClick={async () => {
+                  const { subject, body } = followUpEmail(meeting)
+                  const trimmed = await window.scribe.email.compose(subject, body)
+                  setEmailTrimmed(trimmed)
+                  if (trimmed) setTimeout(() => setEmailTrimmed(false), 6000)
+                }}
+              >
+                Follow-up email
+              </button>
+            )}
             <button className="btn" onClick={exportMd}>
               Export Markdown
             </button>
@@ -348,6 +363,11 @@ export function MeetingView({
             {exportedTo && (
               <span className="field-note ok" role="status">
                 Saved to {exportedTo}
+              </span>
+            )}
+            {emailTrimmed && (
+              <span className="field-note" role="status">
+                Long recap trimmed to fit your mail app — use Copy summary for the full version.
               </span>
             )}
           </div>
