@@ -34,6 +34,9 @@ export function AskWidget({
   const endRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const [confirmEl, confirm] = useConfirm()
+  // set when navigation came from a citation chip: that's a continuation of
+  // the library conversation, so don't switch the panel to meeting mode
+  const stayInLibrary = useRef(false)
 
   useEffect(() => {
     window.scribe.ask.history().then(setLibraryHistory)
@@ -42,7 +45,8 @@ export function AskWidget({
   // follow the page: a meeting page talks about that meeting by default
   useEffect(() => {
     if (meetingContext) {
-      setMode('meeting')
+      if (stayInLibrary.current) stayInLibrary.current = false
+      else setMode('meeting')
       window.scribe.meetings.get(meetingContext.id).then((m) => setMeetingQA(m?.qa ?? []))
     } else {
       setMode('library')
@@ -200,7 +204,10 @@ export function AskWidget({
                       <button
                         className="source-chip"
                         key={s.ref}
-                        onClick={() => onOpenMeeting(s.meetingId, s.timestampMs ?? undefined)}
+                        onClick={() => {
+                          stayInLibrary.current = true
+                          onOpenMeeting(s.meetingId, s.timestampMs ?? undefined)
+                        }}
                         title={
                           s.timestampMs !== null
                             ? 'Open this meeting at the cited moment'
