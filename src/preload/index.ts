@@ -10,6 +10,8 @@ import type {
   LibraryQA,
   Meeting,
   MeetingListItem,
+  PersonProfile,
+  PersonSummary,
   RecordingMode,
   TranscriptSegment,
   WhisperModel
@@ -119,6 +121,11 @@ const api = {
     history: (): Promise<LibraryQA[]> => ipcRenderer.invoke('ask:history'),
     ask: (question: string): Promise<LibraryQA> => ipcRenderer.invoke('ask:ask', question),
     clear: (): Promise<void> => ipcRenderer.invoke('ask:clear')
+  },
+  people: {
+    list: (): Promise<PersonSummary[]> => ipcRenderer.invoke('people:list'),
+    profile: (name: string): Promise<PersonProfile | null> =>
+      ipcRenderer.invoke('people:profile', name)
   },
   actions: {
     list: (): Promise<ActionRollupItem[]> => ipcRenderer.invoke('actions:list'),

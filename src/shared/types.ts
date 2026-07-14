@@ -149,6 +149,31 @@ export interface EventBrief {
   openQuestions: string[]
 }
 
+/** one row on the People page */
+export interface PersonSummary {
+  name: string
+  meetingCount: number
+  openItems: number
+}
+
+export interface PersonMeetingRef {
+  id: string
+  title: string
+  createdAt: string
+  tldr?: string
+}
+
+/** everything the app knows about one colleague */
+export interface PersonProfile {
+  name: string
+  /** meetings they appeared in (attendee, named speaker, or item owner) */
+  meetings: PersonMeetingRef[]
+  /** action items they own, open and done */
+  items: ActionRollupItem[]
+  /** your own open items from meetings you shared with them */
+  myCommitments: ActionRollupItem[]
+}
+
 export type WhisperModel = 'base.en' | 'small.en' | 'medium.en'
 
 export type AppTheme = 'studio' | 'rowan' | 'slate' | 'paper'

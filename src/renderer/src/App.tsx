@@ -8,8 +8,9 @@ import { SettingsView } from './views/Settings'
 import { ActionsView } from './views/Actions'
 import { ImportView } from './views/Import'
 import { TodayView } from './views/Today'
+import { PeopleView, PersonView } from './views/People'
 import { AskWidget } from './AskWidget'
-import { MicIcon, ListIcon, GearIcon, CheckIcon, TodayIcon, formatDuration } from './ui'
+import { MicIcon, ListIcon, GearIcon, CheckIcon, TodayIcon, UsersIcon, formatDuration } from './ui'
 
 export type View =
   | { name: 'today' }
@@ -17,6 +18,8 @@ export type View =
   | { name: 'record' }
   | { name: 'meeting'; id: string; at?: number }
   | { name: 'actions' }
+  | { name: 'people' }
+  | { name: 'person'; person: string }
   | { name: 'import' }
   | { name: 'settings' }
 
@@ -96,6 +99,12 @@ export default function App(): React.JSX.Element {
           <CheckIcon /> Action items
         </button>
         <button
+          className={`nav-btn ${view.name === 'people' || view.name === 'person' ? 'active' : ''}`}
+          onClick={() => setView({ name: 'people' })}
+        >
+          <UsersIcon /> People
+        </button>
+        <button
           className={`nav-btn ${view.name === 'settings' ? 'active' : ''}`}
           onClick={() => setView({ name: 'settings' })}
         >
@@ -131,7 +140,10 @@ export default function App(): React.JSX.Element {
         )}
       </nav>
 
-      <main className="main" key={view.name + ('id' in view ? view.id : '')}>
+      <main
+        className="main"
+        key={view.name + ('id' in view ? view.id : '') + ('person' in view ? view.person : '')}
+      >
         <div className="view-enter" style={{ height: view.name === 'record' ? '100%' : undefined }}>
           {view.name === 'today' && (
             <TodayView
@@ -177,6 +189,16 @@ export default function App(): React.JSX.Element {
             />
           )}
           {view.name === 'actions' && <ActionsView onOpen={openMeeting} />}
+          {view.name === 'people' && (
+            <PeopleView onOpenPerson={(person) => setView({ name: 'person', person })} />
+          )}
+          {view.name === 'person' && (
+            <PersonView
+              name={view.person}
+              onBack={() => setView({ name: 'people' })}
+              onOpenMeeting={openMeeting}
+            />
+          )}
           {view.name === 'import' && (
             <ImportView
               onDone={(m) => {

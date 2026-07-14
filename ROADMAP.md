@@ -13,9 +13,10 @@ usable in meetings that touch student data.
 - [x] **Library-wide Ask** — ask questions across every meeting, answered with citations that
       link back to the source meetings (v0.3.0). Uses two-stage retrieval: a cheap pass over a
       compact catalog picks the relevant meetings, a second pass answers from their transcripts.
-- [ ] **Person pages** — one page per colleague: meetings they appeared in, action items they
-      own, commitments made to them. (The `people` directory and action-item owners already
-      exist as the data backbone.)
+- [x] **Person pages** — a People tab with one page per colleague: meetings together, action
+      items they own (with done-tracking), and your own open commitments from shared meetings.
+      Built from action-item owners, calendar attendees, named speakers, and the team
+      directory (v0.7.0).
 - [ ] **Threads / series** — tag meetings to a recurring series ("Enrollment Ops weekly") and
       get a running narrative: decisions to date, open items, what changed since last time.
 

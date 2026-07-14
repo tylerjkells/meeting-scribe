@@ -31,6 +31,7 @@ import { getSettings, updateSettings, setApiKey, setCalendarUrl, addPerson } fro
 import { refreshCalendar, getTodayEvents, findLiveEvent, clearCalendarCache } from './calendar'
 import { startRecordNudge } from './nudge'
 import { briefForEvent } from './brief'
+import { listPeople, personProfile } from './people'
 import { engineStatus, setupEngine } from './whisper'
 import { processMeeting, summarizeMeeting } from './pipeline'
 import { askAboutMeeting, testApiKey } from './summarize'
@@ -392,6 +393,10 @@ function registerIpc(): void {
     askLibrary(question, getSettings().claudeModel)
   )
   ipcMain.handle('ask:clear', () => clearAskHistory())
+
+  // --- person pages ---
+  ipcMain.handle('people:list', () => listPeople())
+  ipcMain.handle('people:profile', (_e, name: string) => personProfile(name))
 
   ipcMain.handle('actions:list', (): ActionRollupItem[] => {
     const items: ActionRollupItem[] = []

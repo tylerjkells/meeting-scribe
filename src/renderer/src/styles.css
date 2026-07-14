@@ -1813,6 +1813,38 @@ select.text-input {
   align-self: flex-start;
 }
 
+/* ---------- people ---------- */
+
+.person-open {
+  color: var(--accent-strong);
+  font-weight: 600;
+}
+
+.person-name {
+  font-size: 22px;
+  letter-spacing: -0.02em;
+  margin-bottom: var(--s2);
+}
+
+.person-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--s2);
+}
+
+.person-section-head .card-subhead {
+  margin: 0;
+}
+
+.person-showdone {
+  font-size: 12px;
+}
+
+.section > .card-subhead {
+  margin-bottom: var(--s2);
+}
+
 /* ---------- ask widget (floating assistant) ---------- */
 
 .askw-fab {
