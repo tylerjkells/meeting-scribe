@@ -98,6 +98,13 @@ const api = {
       return () => ipcRenderer.removeListener('meeting:updated', handler)
     }
   },
+  nudge: {
+    onOpenRecord: (cb: () => void): (() => void) => {
+      const handler = (): void => cb()
+      ipcRenderer.on('nudge:openRecord', handler)
+      return () => ipcRenderer.removeListener('nudge:openRecord', handler)
+    }
+  },
   calendar: {
     connect: (url: string): Promise<{ ok: boolean; error?: string; countThisWeek?: number }> =>
       ipcRenderer.invoke('calendar:connect', url),

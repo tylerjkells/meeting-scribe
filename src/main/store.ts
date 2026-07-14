@@ -116,6 +116,11 @@ interface RecSession {
 
 const sessions = new Map<string, RecSession>()
 
+/** whether any recording session is live (used to suppress record nudges) */
+export function hasActiveRecording(): boolean {
+  return sessions.size > 0
+}
+
 function broadcastLive(id: string, segments: TranscriptSegment[], transcribedMs: number): void {
   for (const win of BrowserWindow.getAllWindows()) {
     win.webContents.send('rec:live', { id, segments, transcribedMs })

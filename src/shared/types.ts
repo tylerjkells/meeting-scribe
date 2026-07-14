@@ -147,6 +147,8 @@ export interface AppSettings {
   hasApiKey: boolean
   /** a calendar feed URL is connected */
   hasCalendar: boolean
+  /** notify when a calendared meeting starts and nothing is recording */
+  recordNudge: boolean
   /** team directory: names offered when assigning action items */
   people: string[]
 }

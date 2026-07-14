@@ -30,8 +30,8 @@ usable in meetings that touch student data.
 - [ ] **Pre-meeting briefs** — before a recurring meeting: what was decided last time, which
       action items are still open, what you said you'd bring. (v0.4.0 ships a first step: each
       event links to the most recent related meeting in the library.)
-- [ ] **Record nudge** — tray notification when a meeting with a call link starts and nothing
-      is recording.
+- [x] **Record nudge** — system notification when a meeting with a call link or room starts and
+      nothing is recording; clicking it opens the Record page. Toggle in Settings (v0.5.0).
 
 ## 3. Action items that leave the app
 
