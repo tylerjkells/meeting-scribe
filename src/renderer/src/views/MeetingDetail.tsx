@@ -552,7 +552,7 @@ export function MeetingView({
       <section className="section danger-row">
         {meeting.hasAudio && meeting.transcript && meeting.transcript.length > 0 && (
           <button
-            className="btn btn-ghost"
+            className="btn"
             title="Frees disk space; the transcript, summary, and Q&A stay"
             onClick={async () => {
               const sure = window.confirm(
@@ -566,7 +566,7 @@ export function MeetingView({
             Delete audio, keep notes
           </button>
         )}
-        <button className="btn btn-ghost btn-danger" onClick={remove}>
+        <button className="btn btn-danger" onClick={remove}>
           Delete meeting
         </button>
       </section>
