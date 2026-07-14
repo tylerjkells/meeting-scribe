@@ -27,9 +27,10 @@ usable in meetings that touch student data.
       today's recordings, open action items assigned to Me (v0.4.0).
 - [x] **Auto-context on record** — a recording started during a calendar event inherits the
       event's title (v0.4.0). Still to come: attendee names pre-filling speakers.
-- [ ] **Pre-meeting briefs** — before a recurring meeting: what was decided last time, which
-      action items are still open, what you said you'd bring. (v0.4.0 ships a first step: each
-      event links to the most recent related meeting in the library.)
+- [x] **Pre-meeting briefs** — each Today event with a matching past meeting gets an expandable
+      "Last met" brief: decisions, still-open action items with owners/dues, and open questions,
+      built straight from the stored summary (no model call). The live/next meeting's brief
+      auto-expands (v0.5.0). Later: LLM synthesis across multiple past occurrences.
 - [x] **Record nudge** — system notification when a meeting with a call link or room starts and
       nothing is recording; clicking it opens the Record page. Toggle in Settings (v0.5.0).
 

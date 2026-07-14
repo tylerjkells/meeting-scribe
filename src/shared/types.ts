@@ -138,6 +138,17 @@ export interface CalendarEvent {
   attendees: string[]
 }
 
+/** pre-meeting brief: where a meeting series left off last time */
+export interface EventBrief {
+  meetingId: string
+  meetingTitle: string
+  createdAt: string
+  tldr: string | null
+  decisions: string[]
+  openActions: { task: string; owner: string | null; due: string | null }[]
+  openQuestions: string[]
+}
+
 export type WhisperModel = 'base.en' | 'small.en' | 'medium.en'
 
 export interface AppSettings {

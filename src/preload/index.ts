@@ -6,6 +6,7 @@ import type {
   EnergySample,
   EngineProgress,
   EngineStatus,
+  EventBrief,
   LibraryQA,
   Meeting,
   MeetingListItem,
@@ -89,6 +90,8 @@ const api = {
       ipcRenderer.invoke('meetings:import', title, dateIso, text),
     search: (query: string): Promise<{ id: string; snippet: string }[]> =>
       ipcRenderer.invoke('meetings:search', query),
+    briefFor: (eventTitle: string): Promise<EventBrief | null> =>
+      ipcRenderer.invoke('meetings:briefFor', eventTitle),
     deleteAudio: (id: string): Promise<Meeting | null> =>
       ipcRenderer.invoke('meetings:deleteAudio', id),
     storageStats: (): Promise<StorageStats> => ipcRenderer.invoke('meetings:storageStats'),
