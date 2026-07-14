@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Meeting } from '../../../shared/types'
-import { BackIcon, ChevronIcon, formatDuration, formatWhen, OwnerEditor, StageBadge } from '../ui'
+import {
+  BackIcon,
+  ChevronIcon,
+  formatDuration,
+  formatWhen,
+  OwnerEditor,
+  StageBadge,
+  useConfirm
+} from '../ui'
 import { exportFilename, followUpEmail, meetingToMarkdown, summaryToMarkdown } from '../markdown'
 
 function Collapse({
@@ -182,6 +190,7 @@ export function MeetingView({
   const [playheadMs, setPlayheadMs] = useState(-1)
   const playerRef = useRef<PlayerControl | null>(null)
   const titleRef = useRef<HTMLInputElement>(null)
+  const [confirmEl, confirm] = useConfirm()
 
   useEffect(() => {
     Promise.all([window.scribe.settings.get(), window.scribe.actions.list()]).then(
@@ -221,6 +230,8 @@ export function MeetingView({
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
       const target = e.target as HTMLElement
+      // an open dialog owns Escape (it closes itself)
+      if (document.querySelector('dialog[open]')) return
       if (e.key === 'Escape' && target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {
         onBack()
       }
@@ -262,9 +273,12 @@ export function MeetingView({
   }
 
   async function remove(): Promise<void> {
-    const sure = window.confirm(
-      `Delete "${meeting?.title}"? Audio, transcript, and summary will be removed.`
-    )
+    const sure = await confirm({
+      title: `Delete "${meeting?.title}"?`,
+      body: 'Audio, transcript, and summary will be removed. This cannot be undone.',
+      confirmLabel: 'Delete meeting',
+      danger: true
+    })
     if (!sure || !meeting) return
     await window.scribe.meetings.delete(meeting.id)
     onDeleted()
@@ -345,10 +359,12 @@ export function MeetingView({
             {meeting.summary && meeting.transcript && meeting.transcript.length > 0 && (
               <button
                 className="btn"
-                onClick={() => {
-                  const sure = window.confirm(
-                    'Rewrite the summary from the transcript? Owner assignments and checked-off action items will be reset.'
-                  )
+                onClick={async () => {
+                  const sure = await confirm({
+                    title: 'Rewrite the summary from the transcript?',
+                    body: 'Owner assignments and checked-off action items will be reset.',
+                    confirmLabel: 'Regenerate'
+                  })
                   if (sure) window.scribe.meetings.resummarize(meeting.id)
                 }}
               >
@@ -555,9 +571,12 @@ export function MeetingView({
             className="btn"
             title="Frees disk space; the transcript, summary, and Q&A stay"
             onClick={async () => {
-              const sure = window.confirm(
-                'Delete the audio recording? The transcript, summary, and Q&A are kept. This frees disk space but the audio cannot be recovered.'
-              )
+              const sure = await confirm({
+                title: 'Delete the audio recording?',
+                body: 'The transcript, summary, and Q&A are kept. This frees disk space but the audio cannot be recovered.',
+                confirmLabel: 'Delete audio',
+                danger: true
+              })
               if (!sure) return
               const updated = await window.scribe.meetings.deleteAudio(meeting.id)
               if (updated) setMeeting(updated)
@@ -570,6 +589,7 @@ export function MeetingView({
           Delete meeting
         </button>
       </section>
+      {confirmEl}
     </div>
   )
 }

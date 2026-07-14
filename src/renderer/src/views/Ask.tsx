@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { LibraryQA } from '../../../shared/types'
-import { formatDuration, formatWhen } from '../ui'
+import { formatDuration, formatWhen, useConfirm } from '../ui'
 
 const EXAMPLES = [
   'What did we decide about…',
@@ -22,6 +22,7 @@ export function AskView({
   const [showAll, setShowAll] = useState(false)
   const endRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const [confirmEl, confirm] = useConfirm()
 
   useEffect(() => {
     window.scribe.ask.history().then((h) => {
@@ -50,7 +51,12 @@ export function AskView({
   }
 
   async function clear(): Promise<void> {
-    const sure = window.confirm('Clear the Ask history? Your meetings are not affected.')
+    const sure = await confirm({
+      title: 'Clear the Ask history?',
+      body: 'Your meetings are not affected.',
+      confirmLabel: 'Clear history',
+      danger: true
+    })
     if (!sure) return
     await window.scribe.ask.clear()
     setHistory([])
@@ -161,6 +167,7 @@ export function AskView({
           {error}
         </p>
       )}
+      {confirmEl}
     </>
   )
 }

@@ -7,7 +7,7 @@ import type {
   TranscriptSegment
 } from '../../../shared/types'
 import { startRecording, readLevel, type RecorderHandles } from '../recorder'
-import { formatDuration, MicIcon, StopIcon } from '../ui'
+import { formatDuration, MicIcon, StopIcon, useConfirm } from '../ui'
 
 export function RecordView({
   engine,
@@ -33,6 +33,7 @@ export function RecordView({
   const [error, setError] = useState<string | null>(null)
   const [finishing, setFinishing] = useState(false)
   const [liveSegs, setLiveSegs] = useState<TranscriptSegment[]>([])
+  const [confirmEl, confirm] = useConfirm()
   const livePanelRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -90,7 +91,12 @@ export function RecordView({
 
   async function discard(): Promise<void> {
     if (!rec) return
-    const sure = window.confirm('Discard this recording? The audio will be deleted.')
+    const sure = await confirm({
+      title: 'Discard this recording?',
+      body: 'The audio will be deleted.',
+      confirmLabel: 'Discard',
+      danger: true
+    })
     if (!sure) return
     await rec.cancel()
     setRec(null)
@@ -191,6 +197,7 @@ export function RecordView({
           {error}
         </div>
       )}
+      {confirmEl}
     </div>
   )
 }

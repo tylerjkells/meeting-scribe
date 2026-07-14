@@ -1,5 +1,74 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { MeetingStage } from '../../shared/types'
+
+export interface ConfirmOptions {
+  title: string
+  body?: string
+  /** label for the confirming button, e.g. "Delete" */
+  confirmLabel?: string
+  /** destructive actions get the accent-solid treatment */
+  danger?: boolean
+}
+
+/**
+ * In-app replacement for window.confirm. Returns the dialog element (render
+ * it anywhere in the view) and an async confirm(opts) that resolves true on
+ * confirm, false on cancel/Escape/backdrop click.
+ */
+export function useConfirm(): [React.JSX.Element, (opts: ConfirmOptions) => Promise<boolean>] {
+  const [opts, setOpts] = useState<ConfirmOptions | null>(null)
+  const resolver = useRef<((v: boolean) => void) | null>(null)
+  const dialogRef = useRef<HTMLDialogElement>(null)
+
+  const confirm = useCallback((o: ConfirmOptions): Promise<boolean> => {
+    setOpts(o)
+    return new Promise<boolean>((resolve) => {
+      resolver.current = resolve
+    })
+  }, [])
+
+  useEffect(() => {
+    if (opts) dialogRef.current?.showModal()
+  }, [opts])
+
+  function settle(value: boolean): void {
+    resolver.current?.(value)
+    resolver.current = null
+    dialogRef.current?.close()
+    setOpts(null)
+  }
+
+  const element = opts ? (
+    <dialog
+      ref={dialogRef}
+      className="confirm"
+      onClose={() => settle(false)}
+      onClick={(e) => {
+        // click on the backdrop (the dialog element itself) cancels
+        if (e.target === dialogRef.current) settle(false)
+      }}
+    >
+      <h3>{opts.title}</h3>
+      {opts.body && <p>{opts.body}</p>}
+      <div className="confirm-actions">
+        <button className="btn" onClick={() => settle(false)}>
+          Cancel
+        </button>
+        <button
+          className={`btn ${opts.danger ? 'btn-solid-danger' : 'btn-primary'}`}
+          autoFocus
+          onClick={() => settle(true)}
+        >
+          {opts.confirmLabel ?? 'OK'}
+        </button>
+      </div>
+    </dialog>
+  ) : (
+    <></>
+  )
+
+  return [element, confirm]
+}
 
 export function formatDuration(ms: number): string {
   const total = Math.floor(ms / 1000)

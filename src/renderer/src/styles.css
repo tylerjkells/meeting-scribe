@@ -1890,6 +1890,70 @@ select.text-input {
   }
 }
 
+/* ---------- confirm dialog ---------- */
+
+dialog.confirm {
+  margin: auto;
+  width: min(440px, 90vw);
+  padding: var(--s5);
+  background: var(--bg-raised);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+}
+
+dialog.confirm[open] {
+  animation: confirm-in 150ms var(--ease-out);
+}
+
+@keyframes confirm-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  dialog.confirm[open] {
+    animation: none;
+  }
+}
+
+dialog.confirm::backdrop {
+  background: oklch(0 0 0 / 0.45);
+}
+
+dialog.confirm h3 {
+  font-size: 15px;
+  margin-bottom: var(--s2);
+}
+
+dialog.confirm p {
+  color: var(--ink-soft);
+  font-size: 13px;
+  text-wrap: pretty;
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--s2);
+  margin-top: var(--s5);
+}
+
+/* solid accent button for confirming destructive actions */
+.btn-solid-danger {
+  background: var(--accent);
+  border-color: transparent;
+  color: var(--on-accent);
+  font-weight: 650;
+}
+
+.btn-solid-danger:hover {
+  background: var(--accent-strong);
+  border-color: transparent;
+}
+
 /* ---------- follow-up email draft ---------- */
 
 .email-draft {
