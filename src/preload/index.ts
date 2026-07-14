@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 import type {
   ActionRollupItem,
   AppSettings,
+  CalendarEvent,
   EnergySample,
   EngineProgress,
   EngineStatus,
@@ -96,6 +97,13 @@ const api = {
       ipcRenderer.on('meeting:updated', handler)
       return () => ipcRenderer.removeListener('meeting:updated', handler)
     }
+  },
+  calendar: {
+    connect: (url: string): Promise<{ ok: boolean; error?: string; countThisWeek?: number }> =>
+      ipcRenderer.invoke('calendar:connect', url),
+    disconnect: (): Promise<AppSettings> => ipcRenderer.invoke('calendar:disconnect'),
+    today: (): Promise<{ events: CalendarEvent[]; error?: string }> =>
+      ipcRenderer.invoke('calendar:today')
   },
   ask: {
     history: (): Promise<LibraryQA[]> => ipcRenderer.invoke('ask:history'),

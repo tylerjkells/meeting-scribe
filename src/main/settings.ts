@@ -10,6 +10,8 @@ interface StoredSettings {
   people: string[]
   /** base64 of safeStorage-encrypted API key */
   apiKeyEncrypted: string | null
+  /** base64 of safeStorage-encrypted iCal feed URL (the URL is a secret) */
+  calendarUrlEncrypted: string | null
 }
 
 const DEFAULTS: StoredSettings = {
@@ -17,7 +19,8 @@ const DEFAULTS: StoredSettings = {
   claudeModel: 'claude-haiku-4-5',
   autoSummarize: true,
   people: [],
-  apiKeyEncrypted: null
+  apiKeyEncrypted: null,
+  calendarUrlEncrypted: null
 }
 
 function settingsPath(): string {
@@ -52,7 +55,8 @@ export function getSettings(): AppSettings {
     claudeModel: s.claudeModel,
     autoSummarize: s.autoSummarize,
     people: s.people ?? [],
-    hasApiKey: !!s.apiKeyEncrypted
+    hasApiKey: !!s.apiKeyEncrypted,
+    hasCalendar: !!s.calendarUrlEncrypted
   }
 }
 
@@ -110,12 +114,34 @@ export function setApiKey(key: string | null): AppSettings {
 
 export function getApiKey(): string | null {
   const s = load()
-  if (!s.apiKeyEncrypted) return null
+  return decryptStored(s.apiKeyEncrypted)
+}
+
+export function setCalendarUrl(url: string | null): AppSettings {
+  const s = load()
+  if (!url) {
+    s.calendarUrlEncrypted = null
+  } else if (safeStorage.isEncryptionAvailable()) {
+    s.calendarUrlEncrypted = safeStorage.encryptString(url.trim()).toString('base64')
+  } else {
+    s.calendarUrlEncrypted = 'plain:' + Buffer.from(url.trim()).toString('base64')
+  }
+  persist()
+  return getSettings()
+}
+
+export function getCalendarUrl(): string | null {
+  const s = load()
+  return decryptStored(s.calendarUrlEncrypted)
+}
+
+function decryptStored(value: string | null): string | null {
+  if (!value) return null
   try {
-    if (s.apiKeyEncrypted.startsWith('plain:')) {
-      return Buffer.from(s.apiKeyEncrypted.slice(6), 'base64').toString('utf-8')
+    if (value.startsWith('plain:')) {
+      return Buffer.from(value.slice(6), 'base64').toString('utf-8')
     }
-    return safeStorage.decryptString(Buffer.from(s.apiKeyEncrypted, 'base64'))
+    return safeStorage.decryptString(Buffer.from(value, 'base64'))
   } catch {
     return null
   }

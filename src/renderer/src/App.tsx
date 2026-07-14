@@ -8,9 +8,11 @@ import { SettingsView } from './views/Settings'
 import { ActionsView } from './views/Actions'
 import { ImportView } from './views/Import'
 import { AskView } from './views/Ask'
-import { MicIcon, ListIcon, GearIcon, CheckIcon, SparkIcon, formatDuration } from './ui'
+import { TodayView } from './views/Today'
+import { MicIcon, ListIcon, GearIcon, CheckIcon, SparkIcon, TodayIcon, formatDuration } from './ui'
 
 export type View =
+  | { name: 'today' }
   | { name: 'library' }
   | { name: 'record' }
   | { name: 'meeting'; id: string; at?: number }
@@ -30,7 +32,7 @@ function RecTicker({ rec }: { rec: RecorderHandles }): React.JSX.Element {
 }
 
 export default function App(): React.JSX.Element {
-  const [view, setView] = useState<View>({ name: 'library' })
+  const [view, setView] = useState<View>({ name: 'today' })
   const [meetings, setMeetings] = useState<MeetingListItem[]>([])
   const [settings, setSettings] = useState<AppSettings | null>(null)
   const [engine, setEngine] = useState<EngineStatus | null>(null)
@@ -73,6 +75,12 @@ export default function App(): React.JSX.Element {
           <span className="brand-dot" aria-hidden="true" />
           MeetingScribe
         </div>
+        <button
+          className={`nav-btn ${view.name === 'today' ? 'active' : ''}`}
+          onClick={() => setView({ name: 'today' })}
+        >
+          <TodayIcon /> Today
+        </button>
         <button
           className={`nav-btn ${view.name === 'library' || view.name === 'meeting' ? 'active' : ''}`}
           onClick={() => setView({ name: 'library' })}
@@ -129,6 +137,15 @@ export default function App(): React.JSX.Element {
 
       <main className="main" key={view.name + ('id' in view ? view.id : '')}>
         <div className="view-enter" style={{ height: view.name === 'record' ? '100%' : undefined }}>
+          {view.name === 'today' && (
+            <TodayView
+              meetings={meetings}
+              onOpen={openMeeting}
+              onRecord={() => setView({ name: 'record' })}
+              onSettings={() => setView({ name: 'settings' })}
+              onActions={() => setView({ name: 'actions' })}
+            />
+          )}
           {view.name === 'library' && (
             <LibraryView
               meetings={meetings}

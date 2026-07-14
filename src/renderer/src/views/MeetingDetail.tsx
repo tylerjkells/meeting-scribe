@@ -314,6 +314,12 @@ export function MeetingView({
                 ? 'imported'
                 : 'in person'}
           </span>
+          {meeting.attendees && meeting.attendees.length > 0 && (
+            <span title={meeting.attendees.join(', ')}>
+              with {meeting.attendees.slice(0, 3).join(', ')}
+              {meeting.attendees.length > 3 ? ` +${meeting.attendees.length - 3}` : ''}
+            </span>
+          )}
           <StageBadge stage={meeting.stage} progress={meeting.progress} />
         </div>
         {(meeting.summary || (meeting.transcript && meeting.transcript.length > 0)) && (

@@ -106,6 +106,8 @@ export interface Meeting {
   qa?: MeetingQA[]
   /** display names for the two audio sources, e.g. { me: 'Tyler', them: 'David' } */
   speakerNames?: { me: string; them: string }
+  /** participant names inherited from the matching calendar event */
+  attendees?: string[]
 }
 
 /** Lightweight listing shape (no transcript body) */
@@ -121,6 +123,21 @@ export interface MeetingListItem {
   tldr?: string
 }
 
+/** one event from the connected calendar feed */
+export interface CalendarEvent {
+  id: string
+  title: string
+  /** ISO start/end */
+  start: string
+  end: string
+  allDay: boolean
+  location: string | null
+  /** join link when a known meeting platform was found in the event */
+  joinUrl: string | null
+  /** display names of invitees + organizer, when the feed includes them */
+  attendees: string[]
+}
+
 export type WhisperModel = 'base.en' | 'small.en' | 'medium.en'
 
 export interface AppSettings {
@@ -128,6 +145,8 @@ export interface AppSettings {
   claudeModel: string
   autoSummarize: boolean
   hasApiKey: boolean
+  /** a calendar feed URL is connected */
+  hasCalendar: boolean
   /** team directory: names offered when assigning action items */
   people: string[]
 }

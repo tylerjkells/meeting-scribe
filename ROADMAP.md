@@ -21,13 +21,15 @@ usable in meetings that touch student data.
 
 ## 2. Calendar awareness
 
-- [ ] **Calendar connection** (read-only) — Google/Outlook.
+- [x] **Calendar connection** (read-only) — any Outlook/Google calendar via its published iCal
+      address; the URL is stored encrypted, polled from the main process (v0.4.0).
+- [x] **Today view** — the launch screen: today's schedule with live-now marker and join links,
+      today's recordings, open action items assigned to Me (v0.4.0).
+- [x] **Auto-context on record** — a recording started during a calendar event inherits the
+      event's title (v0.4.0). Still to come: attendee names pre-filling speakers.
 - [ ] **Pre-meeting briefs** — before a recurring meeting: what was decided last time, which
-      action items are still open, what you said you'd bring.
-- [ ] **Auto-context on record** — recording during a calendar event inherits its title,
-      attendees (pre-filling speaker names), and series.
-- [ ] **Today view** — a launch screen with today's meetings + briefs, recordings processing,
-      and action items due soon.
+      action items are still open, what you said you'd bring. (v0.4.0 ships a first step: each
+      event links to the most recent related meeting in the library.)
 - [ ] **Record nudge** — tray notification when a meeting with a call link starts and nothing
       is recording.
 

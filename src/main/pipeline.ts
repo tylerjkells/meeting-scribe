@@ -76,7 +76,11 @@ export async function summarizeMeeting(id: string): Promise<void> {
   const settings = getSettings()
   meeting = update(meeting, { stage: 'summarizing', error: undefined })
   try {
-    const summary = await summarizeTranscript(transcript, settings.claudeModel)
+    // calendar attendees when the feed provides them, else the team directory:
+    // either way the model gets real name spellings to attribute against
+    const knownNames =
+      meeting.attendees && meeting.attendees.length > 0 ? meeting.attendees : settings.people
+    const summary = await summarizeTranscript(transcript, settings.claudeModel, knownNames)
     const keepUserTitle =
       meeting.title && !/^(Virtual meeting|Imported meeting|Meeting) · /.test(meeting.title)
     update(meeting, {

@@ -88,7 +88,8 @@ export function transcriptToText(
 
 export async function summarizeTranscript(
   segments: TranscriptSegment[],
-  model: string
+  model: string,
+  attendees?: string[]
 ): Promise<MeetingSummary> {
   const apiKey = getApiKey()
   if (!apiKey) {
@@ -97,6 +98,10 @@ export async function summarizeTranscript(
 
   const client = new Anthropic({ apiKey })
   const transcript = transcriptToText(segments)
+  const attendeeNote =
+    attendees && attendees.length > 0
+      ? ` These names are known from the calendar invite or the user's team directory and may appear in this meeting: ${attendees.join(', ')}. When attributing action items or decisions to people, prefer these exact spellings over phonetic guesses from the transcript, but only when the transcript plausibly refers to that person.`
+      : ''
 
   const response = await client.messages.create({
     model,
@@ -106,7 +111,8 @@ export async function summarizeTranscript(
       'The transcript comes from automatic speech recognition and may contain errors; infer meaning from context and do not invent facts that are not supported by the transcript. ' +
       'Lines labeled "Me" were spoken by the person you are summarizing for; lines labeled "Them" are the other participants (possibly several people). Unlabeled lines could be anyone. ' +
       'Write for the meeting participant reviewing this later: concrete, specific, no filler. ' +
-      'Group the discussion into topical sections the way good meeting minutes do: when the conversation jumps between subjects, give each subject its own section with a short heading, and put the substance in the notes (numbers, names, formats, reasons), not vague paraphrase.',
+      'Group the discussion into topical sections the way good meeting minutes do: when the conversation jumps between subjects, give each subject its own section with a short heading, and put the substance in the notes (numbers, names, formats, reasons), not vague paraphrase.' +
+      attendeeNote,
     output_config: {
       format: {
         type: 'json_schema',
