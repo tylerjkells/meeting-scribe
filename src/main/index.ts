@@ -375,13 +375,25 @@ function registerIpc(): void {
   })
   ipcMain.handle('meetings:briefFor', (_e, eventTitle: string) => briefForEvent(eventTitle))
 
-  // open the default mail client with a prefilled recap; mailto URLs are
-  // capped around 2KB on Windows, so long bodies are trimmed at a line break
+  // open a compose draft with the recap prefilled. Destination comes from
+  // settings: the system mailto handler, Outlook on the web, or Gmail. mailto
+  // URLs are capped around 2KB on Windows (browsers tolerate far more), so
+  // long bodies are trimmed at a line break
   ipcMain.handle('email:compose', (_e, subject: string, body: string): boolean => {
-    const MAX_URL = 1900
+    const client = getSettings().emailClient
+    const MAX_URL = client === 'system' ? 1900 : 6000
     const NOTE = '\r\n[Recap trimmed to fit - the full summary is in MeetingScribe]'
-    const toUrl = (b: string): string =>
-      `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(b)}`
+    const toUrl = (b: string): string => {
+      const s = encodeURIComponent(subject)
+      const enc = encodeURIComponent(b)
+      if (client === 'outlook') {
+        return `https://outlook.office.com/mail/deeplink/compose?subject=${s}&body=${enc}`
+      }
+      if (client === 'gmail') {
+        return `https://mail.google.com/mail/?view=cm&fs=1&su=${s}&body=${enc}`
+      }
+      return `mailto:?subject=${s}&body=${enc}`
+    }
     let url = toUrl(body)
     let trimmed = false
     if (url.length > MAX_URL) {

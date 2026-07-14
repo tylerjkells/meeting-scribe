@@ -394,6 +394,44 @@ export function SettingsView({
 
       <section className="settings-section">
         <header className="settings-label">
+          <h2>Follow-up emails</h2>
+          <p className="hint">
+            Where the &ldquo;Follow-up email&rdquo; button on a meeting page opens its recap
+            draft.
+          </p>
+        </header>
+        <div className="settings-body">
+          <div className="opt-list" role="radiogroup" aria-label="Email destination">
+            <OptRow
+              title="Default mail app"
+              desc="Whatever Windows has set to handle email links."
+              selected={settings.emailClient === 'system'}
+              onSelect={async () =>
+                onChange(await window.scribe.settings.update({ emailClient: 'system' }))
+              }
+            />
+            <OptRow
+              title="Outlook on the web"
+              desc="A compose window at outlook.office.com — best for work accounts."
+              selected={settings.emailClient === 'outlook'}
+              onSelect={async () =>
+                onChange(await window.scribe.settings.update({ emailClient: 'outlook' }))
+              }
+            />
+            <OptRow
+              title="Gmail"
+              desc="A compose window at mail.google.com."
+              selected={settings.emailClient === 'gmail'}
+              onSelect={async () =>
+                onChange(await window.scribe.settings.update({ emailClient: 'gmail' }))
+              }
+            />
+          </div>
+        </div>
+      </section>
+
+      <section className="settings-section">
+        <header className="settings-label">
           <h2>Team directory</h2>
           <p className="hint">
             Offered when assigning action items. Assigning a new name or naming a speaker adds

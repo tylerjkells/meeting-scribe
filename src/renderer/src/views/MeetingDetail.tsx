@@ -349,7 +349,7 @@ export function MeetingView({
             </button>
             {meeting.summary && meeting.transcript && meeting.transcript.length > 0 && (
               <button
-                className="btn btn-ghost"
+                className="btn"
                 onClick={() => {
                   const sure = window.confirm(
                     'Rewrite the summary from the transcript? Owner assignments and checked-off action items will be reset.'
