@@ -1890,6 +1890,38 @@ select.text-input {
   }
 }
 
+/* ---------- follow-up email draft ---------- */
+
+.email-draft {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-card);
+  padding: var(--s4);
+  margin-bottom: var(--s4);
+}
+
+.email-draft-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.email-draft-body {
+  min-height: 220px;
+  resize: vertical;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.email-draft-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+}
+
 /* ---------- transcript import ---------- */
 
 .import-hint {

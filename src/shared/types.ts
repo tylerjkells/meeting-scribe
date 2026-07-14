@@ -153,9 +153,6 @@ export type WhisperModel = 'base.en' | 'small.en' | 'medium.en'
 
 export type AppTheme = 'studio' | 'rowan' | 'slate' | 'paper'
 
-/** where "Follow-up email" opens its compose draft */
-export type EmailClient = 'system' | 'outlook' | 'gmail'
-
 export interface AppSettings {
   whisperModel: WhisperModel
   claudeModel: string
@@ -166,7 +163,6 @@ export interface AppSettings {
   /** notify when a calendared meeting starts and nothing is recording */
   recordNudge: boolean
   theme: AppTheme
-  emailClient: EmailClient
   /** team directory: names offered when assigning action items */
   people: string[]
 }

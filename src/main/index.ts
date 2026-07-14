@@ -374,40 +374,6 @@ function registerIpc(): void {
     return setCalendarUrl(null)
   })
   ipcMain.handle('meetings:briefFor', (_e, eventTitle: string) => briefForEvent(eventTitle))
-
-  // open a compose draft with the recap prefilled. Destination comes from
-  // settings: the system mailto handler, Outlook on the web, or Gmail. mailto
-  // URLs are capped around 2KB on Windows (browsers tolerate far more), so
-  // long bodies are trimmed at a line break
-  ipcMain.handle('email:compose', (_e, subject: string, body: string): boolean => {
-    const client = getSettings().emailClient
-    const MAX_URL = client === 'system' ? 1900 : 6000
-    const NOTE = '\r\n[Recap trimmed to fit - the full summary is in MeetingScribe]'
-    const toUrl = (b: string): string => {
-      const s = encodeURIComponent(subject)
-      const enc = encodeURIComponent(b)
-      if (client === 'outlook') {
-        return `https://outlook.office.com/mail/deeplink/compose?subject=${s}&body=${enc}`
-      }
-      if (client === 'gmail') {
-        return `https://mail.google.com/mail/?view=cm&fs=1&su=${s}&body=${enc}`
-      }
-      return `mailto:?subject=${s}&body=${enc}`
-    }
-    let url = toUrl(body)
-    let trimmed = false
-    if (url.length > MAX_URL) {
-      trimmed = true
-      let b = body
-      while (b.length > 40 && toUrl(b + NOTE).length > MAX_URL) {
-        const cut = b.lastIndexOf('\r\n')
-        b = cut > 40 ? b.slice(0, cut) : b.slice(0, Math.floor(b.length * 0.8))
-      }
-      url = toUrl(b + NOTE)
-    }
-    shell.openExternal(url)
-    return trimmed
-  })
   ipcMain.handle('calendar:today', async () => {
     if (!getSettings().hasCalendar) return { events: [] }
     try {

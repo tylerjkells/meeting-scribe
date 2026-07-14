@@ -1,7 +1,7 @@
 import { app, safeStorage } from 'electron'
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
 import { join } from 'path'
-import type { AppSettings, AppTheme, EmailClient, WhisperModel } from '../shared/types'
+import type { AppSettings, AppTheme, WhisperModel } from '../shared/types'
 
 interface StoredSettings {
   whisperModel: WhisperModel
@@ -9,7 +9,6 @@ interface StoredSettings {
   autoSummarize: boolean
   recordNudge: boolean
   theme: AppTheme
-  emailClient: EmailClient
   people: string[]
   /** base64 of safeStorage-encrypted API key */
   apiKeyEncrypted: string | null
@@ -23,7 +22,6 @@ const DEFAULTS: StoredSettings = {
   autoSummarize: true,
   recordNudge: true,
   theme: 'studio',
-  emailClient: 'system',
   people: [],
   apiKeyEncrypted: null,
   calendarUrlEncrypted: null
@@ -62,7 +60,6 @@ export function getSettings(): AppSettings {
     autoSummarize: s.autoSummarize,
     recordNudge: s.recordNudge !== false,
     theme: s.theme ?? 'studio',
-    emailClient: s.emailClient ?? 'system',
     people: s.people ?? [],
     hasApiKey: !!s.apiKeyEncrypted,
     hasCalendar: !!s.calendarUrlEncrypted
@@ -73,13 +70,7 @@ export function updateSettings(
   patch: Partial<
     Pick<
       AppSettings,
-      | 'whisperModel'
-      | 'claudeModel'
-      | 'autoSummarize'
-      | 'recordNudge'
-      | 'theme'
-      | 'emailClient'
-      | 'people'
+      'whisperModel' | 'claudeModel' | 'autoSummarize' | 'recordNudge' | 'theme' | 'people'
     >
   >
 ): AppSettings {
@@ -89,7 +80,6 @@ export function updateSettings(
   if (typeof patch.autoSummarize === 'boolean') s.autoSummarize = patch.autoSummarize
   if (typeof patch.recordNudge === 'boolean') s.recordNudge = patch.recordNudge
   if (patch.theme) s.theme = patch.theme
-  if (patch.emailClient) s.emailClient = patch.emailClient
   if (Array.isArray(patch.people)) {
     s.people = dedupeNames(patch.people)
   }

@@ -51,8 +51,9 @@ export function meetingToMarkdown(meeting: Meeting): string {
 }
 
 /**
- * Plain-text follow-up email drafted from the summary, for the default mail
- * client. "Me" as an owner becomes the user's speaker name when they set one.
+ * Plain-text follow-up email drafted from the summary, shown in-app for the
+ * user to edit and copy. "Me" as an owner becomes the user's speaker name
+ * when they set one.
  */
 export function followUpEmail(meeting: Meeting): { subject: string; body: string } {
   const s = meeting.summary
@@ -89,7 +90,7 @@ export function followUpEmail(meeting: Meeting): { subject: string; body: string
     }
   }
   lines.push('Reply if I missed or misstated anything.')
-  return { subject: `Recap: ${meeting.title} (${date})`, body: lines.join('\r\n') }
+  return { subject: `Recap: ${meeting.title} (${date})`, body: lines.join('\n') }
 }
 
 /** filesystem-safe filename from a meeting title */
