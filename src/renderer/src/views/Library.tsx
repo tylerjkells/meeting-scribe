@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { MeetingListItem } from '../../../shared/types'
+import type { CalendarEvent, MeetingListItem } from '../../../shared/types'
 import { formatDuration, formatWhen, StageBadge } from '../ui'
 
 type LibView = 'list' | 'calendar'
@@ -181,6 +181,7 @@ function CalendarView({
     const now = new Date()
     return new Date(now.getFullYear(), now.getMonth(), 1)
   })
+  const [events, setEvents] = useState<CalendarEvent[]>([])
 
   const byDay = useMemo(() => {
     const map = new Map<string, MeetingListItem[]>()
@@ -206,6 +207,34 @@ function CalendarView({
       (_, i) => new Date(start.getFullYear(), start.getMonth(), start.getDate() + i)
     )
   }, [anchor])
+
+  // scheduled calendar events for the visible grid (when a feed is connected)
+  useEffect(() => {
+    let alive = true
+    const from = days[0]
+    const to = new Date(days[days.length - 1].getTime() + 86400000)
+    window.scribe.calendar.range(from.toISOString(), to.toISOString()).then((r) => {
+      if (alive) setEvents(r.events)
+    })
+    return () => {
+      alive = false
+    }
+  }, [days])
+
+  const eventsByDay = useMemo(() => {
+    const map = new Map<string, CalendarEvent[]>()
+    for (const e of events) {
+      if (e.allDay) continue
+      const key = dayKey(new Date(e.start))
+      const list = map.get(key) ?? []
+      list.push(e)
+      map.set(key, list)
+    }
+    for (const list of map.values()) {
+      list.sort((a, b) => a.start.localeCompare(b.start))
+    }
+    return map
+  }, [events])
 
   const today = dayKey(new Date())
   const monthLabel = anchor.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
@@ -246,6 +275,11 @@ function CalendarView({
           const key = dayKey(d)
           const inMonth = d.getMonth() === anchor.getMonth()
           const dayMeetings = byDay.get(key) ?? []
+          // scheduled events, minus ones already represented by a recording
+          const recorded = new Set(dayMeetings.map((m) => m.title.trim().toLowerCase()))
+          const dayEvents = (eventsByDay.get(key) ?? []).filter(
+            (e) => !recorded.has(e.title.trim().toLowerCase())
+          )
           return (
             <div
               className={`calendar-cell ${inMonth ? '' : 'outside'} ${key === today ? 'today' : ''}`}
@@ -265,6 +299,21 @@ function CalendarView({
                 >
                   {m.title}
                 </button>
+              ))}
+              {dayEvents.map((e) => (
+                <span
+                  className="calendar-event"
+                  key={e.id}
+                  title={`${e.title}${e.location ? ` · ${e.location}` : ''}`}
+                >
+                  <span className="calendar-event-time">
+                    {new Date(e.start).toLocaleTimeString(undefined, {
+                      hour: 'numeric',
+                      minute: '2-digit'
+                    })}
+                  </span>
+                  {e.title}
+                </span>
               ))}
             </div>
           )

@@ -113,6 +113,8 @@ export interface Meeting {
   speakerNames?: { me: string; them: string }
   /** participant names inherited from the matching calendar event */
   attendees?: string[]
+  /** notes the user typed during or after the meeting; fed to the summarizer */
+  notes?: string
 }
 
 /** Lightweight listing shape (no transcript body) */

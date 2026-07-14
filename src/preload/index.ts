@@ -61,6 +61,8 @@ const api = {
       energy: EnergySample[] | null
     ): Promise<Meeting> => ipcRenderer.invoke('rec:finish', id, webm, durationMs, energy),
     cancel: (id: string): Promise<void> => ipcRenderer.invoke('rec:cancel', id),
+    stashNotes: (id: string, text: string): void => ipcRenderer.send('rec:stashNotes', id, text),
+    readNotes: (id: string): Promise<string> => ipcRenderer.invoke('rec:readNotes', id),
     onLive: (cb: (u: LiveUpdate) => void): (() => void) => {
       const handler = (_e: unknown, u: LiveUpdate): void => cb(u)
       ipcRenderer.on('rec:live', handler)
@@ -90,6 +92,8 @@ const api = {
       ipcRenderer.invoke('meetings:ask', id, question),
     identifySpeakers: (id: string): Promise<Meeting | null> =>
       ipcRenderer.invoke('meetings:identifySpeakers', id),
+    setNotes: (id: string, text: string): Promise<Meeting | null> =>
+      ipcRenderer.invoke('meetings:setNotes', id, text),
     setSpeakers: (id: string, names: { me: string; them: string }): Promise<Meeting | null> =>
       ipcRenderer.invoke('meetings:setSpeakers', id, names),
     import: (title: string, dateIso: string, text: string): Promise<Meeting> =>
@@ -119,7 +123,9 @@ const api = {
       ipcRenderer.invoke('calendar:connect', url),
     disconnect: (): Promise<AppSettings> => ipcRenderer.invoke('calendar:disconnect'),
     today: (): Promise<{ events: CalendarEvent[]; error?: string }> =>
-      ipcRenderer.invoke('calendar:today')
+      ipcRenderer.invoke('calendar:today'),
+    range: (fromIso: string, toIso: string): Promise<{ events: CalendarEvent[]; error?: string }> =>
+      ipcRenderer.invoke('calendar:range', fromIso, toIso)
   },
   ask: {
     history: (): Promise<LibraryQA[]> => ipcRenderer.invoke('ask:history'),

@@ -22,13 +22,21 @@ import {
   appendPcm,
   finishRecording,
   cancelRecording,
+  stashNotes,
+  readStashedNotes,
   findAudio,
   meetingsRoot,
   meetingDir,
   recoverOrphanedRecordings
 } from './store'
 import { getSettings, updateSettings, setApiKey, setCalendarUrl, addPerson } from './settings'
-import { refreshCalendar, getTodayEvents, findLiveEvent, clearCalendarCache } from './calendar'
+import {
+  refreshCalendar,
+  getTodayEvents,
+  getEventsBetween,
+  findLiveEvent,
+  clearCalendarCache
+} from './calendar'
 import { startRecordNudge } from './nudge'
 import { briefForEvent } from './brief'
 import { listPeople, personProfile } from './people'
@@ -254,6 +262,12 @@ function registerIpc(): void {
     }
   )
   ipcMain.handle('rec:cancel', (_e, id: string) => cancelRecording(id))
+  ipcMain.on('rec:stashNotes', (_e, id: string, text: string) => {
+    if (/^[\w-]+$/.test(id)) stashNotes(id, String(text))
+  })
+  ipcMain.handle('rec:readNotes', (_e, id: string) =>
+    /^[\w-]+$/.test(id) ? readStashedNotes(id) : ''
+  )
 
   // --- meetings ---
   ipcMain.handle('meetings:list', () => listMeetings())
@@ -353,6 +367,14 @@ function registerIpc(): void {
     }
   )
 
+  ipcMain.handle('meetings:setNotes', (_e, id: string, text: string) => {
+    const m = readMeeting(id)
+    if (!m) return null
+    m.notes = String(text).trim() || undefined
+    writeMeeting(m)
+    return m
+  })
+
   ipcMain.handle('meetings:identifySpeakers', async (_e, id: string): Promise<Meeting | null> => {
     const meeting = readMeeting(id)
     if (!meeting) throw new Error('Meeting not found')
@@ -397,6 +419,17 @@ function registerIpc(): void {
     return setCalendarUrl(null)
   })
   ipcMain.handle('meetings:briefFor', (_e, eventTitle: string) => briefForEvent(eventTitle))
+  ipcMain.handle('calendar:range', async (_e, fromIso: string, toIso: string) => {
+    if (!getSettings().hasCalendar) return { events: [] }
+    try {
+      return { events: await getEventsBetween(fromIso, toIso) }
+    } catch (err) {
+      return {
+        events: [],
+        error: err instanceof Error ? err.message : 'The calendar feed could not be reached.'
+      }
+    }
+  })
   ipcMain.handle('calendar:today', async () => {
     if (!getSettings().hasCalendar) return { events: [] }
     try {

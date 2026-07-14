@@ -11,6 +11,8 @@ Record, transcribe, and AI-summarize your meetings — locally, privately, and w
 - **Weekly digest** — a Monday prompt with last week's meetings, your open items, anything languishing 2+ weeks, and who owes what.
 - **Meeting series** — recurring meetings self-assemble into threads (recordings inherit their calendar event's title): decisions over time, everything still open across the series, and the full occurrence history.
 - **Speakers** — virtual meetings label you vs. the call automatically; an experimental "speaker turns" engine option sharpens the boundaries, and "Identify speakers" attributes lines to named people from context — so in-person meetings get speakers too.
+- **Live notes** — type notes while recording (crash-safe, editable afterward); they're folded into the summary as high-signal context.
+- **Month calendar** — the Library's calendar view shows your full schedule: scheduled events from the feed alongside recorded meetings.
 - **Today view** — the home screen shows today's calendar (connect any Outlook/Google calendar via its secret iCal address, read-only), today's recordings, and your open action items. Recordings started during a calendar event are titled after it, and each event carries a pre-meeting brief — what was decided last time, which follow-ups are still open, and unresolved questions — pulled from the most recent related meeting in your library.
 - **Record nudge** — a system notification when a calendared meeting starts and nothing is recording, so you never lose a meeting to a forgotten record button. One click lands you on the Record page.
 - **Follow-up email** — one click drafts a recap right in the app (TL;DR, decisions, action items with owners, open questions); edit it, copy it, paste it into any mail client.

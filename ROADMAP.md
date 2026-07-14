@@ -36,6 +36,12 @@ usable in meetings that touch student data.
       auto-expands (v0.5.0). Later: LLM synthesis across multiple past occurrences.
 - [x] **Record nudge** — system notification when a meeting with a call link or room starts and
       nothing is recording; clicking it opens the Record page. Toggle in Settings (v0.5.0).
+- [x] **Month calendar** — the Library calendar view merges scheduled feed events (dashed,
+      quiet) with recorded meetings (solid, clickable); events already recorded that day
+      don't double up (v0.8.0).
+- [x] **Live notes** — a notes box on the recording screen, stashed to disk as you type
+      (crash-safe, survives navigation), attached to the meeting, editable afterward, and fed
+      to the summarizer as high-signal context (v0.8.0).
 
 ## 3. Action items that leave the app
 
