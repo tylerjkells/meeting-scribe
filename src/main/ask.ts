@@ -75,13 +75,18 @@ const ANSWER_SCHEMA = {
             type: 'string',
             description: 'The id of the cited meeting, e.g. "m3"'
           },
+          quote: {
+            anyOf: [{ type: 'string' }, { type: 'null' }],
+            description:
+              'A short excerpt (roughly 5-20 words) copied verbatim from the cited transcript line that best supports this citation, or null when the citation refers to the meeting as a whole'
+          },
           timestampMs: {
             anyOf: [{ type: 'number' }, { type: 'null' }],
             description:
-              'The [m:ss] transcript timestamp that best supports the citation, converted to milliseconds, or null when the citation is not tied to one moment'
+              'The [m:ss] transcript timestamp of that line, converted to milliseconds, or null when the citation is not tied to one moment'
           }
         },
-        required: ['ref', 'meetingId', 'timestampMs'],
+        required: ['ref', 'meetingId', 'quote', 'timestampMs'],
         additionalProperties: false
       },
       description: 'Every meeting cited in the answer. Empty only if nothing was found.'
@@ -137,6 +142,58 @@ function boundedTranscript(m: Meeting): string {
   if (text.length <= PER_MEETING_CHARS) return text
   const half = Math.floor(PER_MEETING_CHARS / 2)
   return `${text.slice(0, half)}\n… [middle of transcript trimmed for length] …\n${text.slice(-half)}`
+}
+
+function normalizeForMatch(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/**
+ * Find the transcript segment containing a quoted excerpt and return its
+ * start time. Models copy text far more reliably than they convert
+ * timestamps, so a located quote beats the model's own timestamp.
+ */
+function locateQuote(m: Meeting, quote: string): number | null {
+  const segs = m.transcript ?? []
+  const nq = normalizeForMatch(quote)
+  if (nq.length < 8 || segs.length === 0) return null
+  // one running haystack so quotes spanning segment boundaries still match
+  let haystack = ''
+  const starts: number[] = []
+  for (const s of segs) {
+    starts.push(haystack.length)
+    haystack += normalizeForMatch(s.text) + ' '
+  }
+  for (const probe of [nq, nq.slice(0, 60), nq.slice(-60)]) {
+    if (probe.length < 8) continue
+    const pos = haystack.indexOf(probe)
+    if (pos < 0) continue
+    let idx = 0
+    for (let i = 0; i < starts.length && starts[i] <= pos; i++) idx = i
+    return segs[idx].from
+  }
+  return null
+}
+
+/** align a model-provided time to the start of the segment it falls in */
+function snapToSegment(m: Meeting, ms: number): number {
+  const segs = m.transcript ?? []
+  const hit = segs.find((s) => ms >= s.from && ms < s.to)
+  if (hit) return hit.from
+  let best = ms
+  let bestDist = Infinity
+  for (const s of segs) {
+    const dist = Math.abs(s.from - ms)
+    if (dist < bestDist) {
+      bestDist = dist
+      best = s.from
+    }
+  }
+  return best
 }
 
 function recentHistoryMessages(): { role: 'user' | 'assistant'; content: string }[] {
@@ -235,22 +292,25 @@ export async function askLibrary(question: string, model: string): Promise<Libra
   if (!text) throw new Error('Empty response from Claude')
   const parsed = JSON.parse(text) as {
     answer: string
-    sources: { ref: number; meetingId: string; timestampMs: number | null }[]
+    sources: { ref: number; meetingId: string; quote: string | null; timestampMs: number | null }[]
   }
 
   const sources: AskSource[] = []
   for (const s of parsed.sources) {
     const m = aliases.get(s.meetingId)
     if (!m || sources.some((x) => x.ref === s.ref)) continue
+    // prefer the located quote; fall back to the model's own timestamp
+    const located = s.quote ? locateQuote(m, s.quote) : null
+    const claimed =
+      typeof s.timestampMs === 'number' && s.timestampMs >= 0 && s.timestampMs <= m.durationMs
+        ? snapToSegment(m, s.timestampMs)
+        : null
     sources.push({
       ref: s.ref,
       meetingId: m.id,
       meetingTitle: m.title,
       createdAt: m.createdAt,
-      timestampMs:
-        typeof s.timestampMs === 'number' && s.timestampMs >= 0 && s.timestampMs <= m.durationMs
-          ? s.timestampMs
-          : null
+      timestampMs: located ?? claimed
     })
   }
   sources.sort((a, b) => a.ref - b.ref)

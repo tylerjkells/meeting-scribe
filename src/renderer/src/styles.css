@@ -1498,18 +1498,19 @@ select.text-input {
   margin-right: 5px;
 }
 
-/* cited transcript segment, briefly lit when arriving from an Ask citation */
-.transcript-seg.flash {
-  animation: seg-flash 2.4s var(--ease-out);
+/* segment cited by an Ask answer: flares on arrival, then stays marked
+   until you leave the page */
+.transcript-seg.cited {
+  background: var(--accent-tint);
+  animation: seg-flash 1.6s var(--ease-out);
 }
 
 @keyframes seg-flash {
-  0%,
-  45% {
-    background: var(--accent-tint);
+  0% {
+    background: oklch(0.63 0.17 27 / 0.3);
   }
   100% {
-    background: transparent;
+    background: var(--accent-tint);
   }
 }
 

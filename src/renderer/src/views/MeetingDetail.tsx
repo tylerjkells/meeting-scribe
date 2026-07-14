@@ -207,8 +207,6 @@ export function MeetingView({
     if (idx < 0) idx = t.length - 1
     setFlashIdx(idx)
     if (meeting.hasAudio) playerRef.current?.seek(focusMs, false)
-    const timer = setTimeout(() => setFlashIdx(null), 2600)
-    return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusMs, meeting?.id, transcriptLoaded])
 
@@ -501,7 +499,7 @@ export function MeetingView({
                   const seekable = meeting.hasAudio
                   return (
                     <div
-                      className={`transcript-seg ${active ? 'active' : ''} ${seekable ? 'seekable' : ''} ${i === flashIdx ? 'flash' : ''}`}
+                      className={`transcript-seg ${active ? 'active' : ''} ${seekable ? 'seekable' : ''} ${i === flashIdx ? 'cited' : ''}`}
                       ref={i === flashIdx ? flashRef : undefined}
                       key={i}
                       onClick={seekable ? () => playerRef.current?.seek(seg.from) : undefined}
