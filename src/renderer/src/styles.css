@@ -364,6 +364,15 @@ button:disabled {
   white-space: nowrap;
 }
 
+/* single-line variant for the Today view: title + meta only */
+.meeting-row.compact {
+  padding: var(--s3);
+}
+
+.meeting-row.compact .meeting-row-meta {
+  grid-row: auto;
+}
+
 .meeting-row-sub {
   color: var(--ink-soft);
   font-size: 13px;

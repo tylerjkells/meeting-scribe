@@ -246,14 +246,18 @@ export function TodayView({
           ) : (
             <div className="meeting-list">
               {todayMeetings.map((m) => (
-                <button key={m.id} className="meeting-row" onClick={() => onOpen(m.id)}>
+                <button
+                  key={m.id}
+                  className="meeting-row compact"
+                  onClick={() => onOpen(m.id)}
+                  title={m.tldr}
+                >
                   <span className="meeting-row-title">{m.title}</span>
                   <span className="meeting-row-meta">
                     <StageBadge stage={m.stage} progress={m.progress} />
                     <span>{formatDuration(m.durationMs)}</span>
                     <span>{formatTime(m.createdAt)}</span>
                   </span>
-                  <span className="meeting-row-sub">{m.tldr ?? ''}</span>
                 </button>
               ))}
             </div>
