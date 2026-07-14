@@ -230,8 +230,8 @@ export function MeetingView({
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
       const target = e.target as HTMLElement
-      // an open dialog owns Escape (it closes itself)
-      if (document.querySelector('dialog[open]')) return
+      // an open dialog or Ask panel owns Escape (they close themselves)
+      if (document.querySelector('dialog[open]') || document.querySelector('.askw-panel')) return
       if (e.key === 'Escape' && target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {
         onBack()
       }
@@ -437,10 +437,6 @@ export function MeetingView({
         </Collapse>
       )}
 
-      {meeting.transcript && meeting.transcript.length > 0 && (
-        <AskSection meeting={meeting} onAnswer={(m) => setMeeting(m)} />
-      )}
-
       {meeting.summary && (
         <>
           {meeting.summary.actionItems.length > 0 && (
@@ -559,10 +555,6 @@ export function MeetingView({
             </div>
           )}
         </section>
-      )}
-
-      {!meeting.summary && meeting.transcript && meeting.transcript.length > 0 && (
-        <AskSection meeting={meeting} onAnswer={(m) => setMeeting(m)} />
       )}
 
       <section className="section danger-row">
@@ -693,76 +685,5 @@ function SpeakerNames({
         aria-label="Name for the other participants' lines"
       />
     </div>
-  )
-}
-
-function AskSection({
-  meeting,
-  onAnswer
-}: {
-  meeting: Meeting
-  onAnswer: (m: Meeting) => void
-}): React.JSX.Element {
-  const [question, setQuestion] = useState('')
-  const [asking, setAsking] = useState(false)
-  const [showAll, setShowAll] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const endRef = useRef<HTMLDivElement>(null)
-
-  async function ask(): Promise<void> {
-    const q = question.trim()
-    if (!q || asking) return
-    setAsking(true)
-    setError(null)
-    try {
-      const answer = await window.scribe.meetings.ask(meeting.id, q)
-      onAnswer({ ...meeting, qa: [...(meeting.qa ?? []), { q, a: answer }] })
-      setQuestion('')
-      requestAnimationFrame(() => endRef.current?.scrollIntoView({ block: 'nearest' }))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'The question could not be answered.')
-    } finally {
-      setAsking(false)
-    }
-  }
-
-  const qa = meeting.qa ?? []
-  const visibleQa = showAll ? qa : qa.slice(-3)
-
-  return (
-    <Collapse label="Ask about this meeting">
-      {qa.length > 3 && !showAll && (
-        <button className="btn btn-ghost qa-earlier" onClick={() => setShowAll(true)}>
-          Show {qa.length - 3} earlier {qa.length - 3 === 1 ? 'question' : 'questions'}
-        </button>
-      )}
-      {visibleQa.map((x, i) => (
-        <div className="qa-pair" key={i}>
-          <p className="qa-q">{x.q}</p>
-          <p className="qa-a">{x.a}</p>
-        </div>
-      ))}
-      <div ref={endRef} />
-      <div className="field-row qa-input-row">
-        <input
-          className="text-input"
-          type="text"
-          placeholder="What did we decide about…"
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && ask()}
-          disabled={asking}
-          aria-label="Ask a question about this meeting"
-        />
-        <button className="btn btn-primary" onClick={ask} disabled={asking || !question.trim()}>
-          {asking ? 'Thinking…' : 'Ask'}
-        </button>
-      </div>
-      {error && (
-        <p className="field-note error" role="alert">
-          {error}
-        </p>
-      )}
-    </Collapse>
   )
 }

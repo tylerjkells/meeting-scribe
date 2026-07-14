@@ -1813,6 +1813,130 @@ select.text-input {
   align-self: flex-start;
 }
 
+/* ---------- ask widget (floating assistant) ---------- */
+
+.askw-fab {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 4px 16px oklch(0 0 0 / 0.35);
+  z-index: 40;
+  transition:
+    background var(--t-fast) var(--ease-out),
+    transform var(--t-fast) var(--ease-out);
+}
+
+.askw-fab:hover {
+  background: var(--accent-strong);
+}
+
+.askw-fab:active {
+  transform: scale(0.94);
+}
+
+.askw-panel {
+  position: fixed;
+  right: 24px;
+  bottom: 84px;
+  width: min(410px, calc(100vw - 48px));
+  height: min(560px, calc(100vh - 120px));
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  box-shadow: 0 12px 40px oklch(0 0 0 / 0.45);
+  z-index: 40;
+  animation: askw-in 180ms var(--ease-out);
+}
+
+@keyframes askw-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .askw-panel {
+    animation: none;
+  }
+}
+
+.askw-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  padding: var(--s3) var(--s3) var(--s3) var(--s4);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.askw-title {
+  font-weight: 650;
+  font-size: 13.5px;
+}
+
+.askw-head-tools {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+}
+
+.askw-clear {
+  font-size: 12px;
+}
+
+.askw-close {
+  padding: 2px 9px;
+  font-size: 13px;
+}
+
+.askw-toggle button {
+  font-size: 12px;
+  padding: 3px 10px;
+}
+
+.askw-context {
+  flex: none;
+  padding: var(--s2) var(--s4) 0;
+  color: var(--ink-faint);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.askw-thread {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--s4);
+}
+
+.askw-empty .ask-examples {
+  margin-top: var(--s3);
+  margin-bottom: 0;
+}
+
+.askw-earlier {
+  margin-bottom: var(--s3);
+  font-size: 12px;
+}
+
+.askw-input-row {
+  flex: none;
+  padding: var(--s3) var(--s4) var(--s4);
+  border-top: 1px solid var(--line-soft);
+}
+
 /* ---------- ask across meetings ---------- */
 
 .ask-hint {
