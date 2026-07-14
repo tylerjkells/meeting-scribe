@@ -149,6 +149,19 @@ export interface EventBrief {
   openQuestions: string[]
 }
 
+/** the Monday-morning rollup */
+export interface WeeklyDigest {
+  /** e.g. "July 14" (the day the digest was generated) */
+  weekLabel: string
+  lastWeekMeetings: { id: string; title: string; createdAt: string; durationMs: number }[]
+  /** open items assigned to Me, all meetings */
+  myOpen: ActionRollupItem[]
+  /** open items (any owner) from meetings more than two weeks old */
+  aging: ActionRollupItem[]
+  /** open-item counts per colleague */
+  byPerson: { name: string; count: number }[]
+}
+
 /** one row on the People page */
 export interface PersonSummary {
   name: string

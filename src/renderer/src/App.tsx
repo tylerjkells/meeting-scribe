@@ -10,6 +10,7 @@ import { ImportView } from './views/Import'
 import { TodayView } from './views/Today'
 import { PeopleView, PersonView } from './views/People'
 import { AskWidget } from './AskWidget'
+import { Digest } from './Digest'
 import { MicIcon, ListIcon, GearIcon, CheckIcon, TodayIcon, UsersIcon, formatDuration } from './ui'
 
 export type View =
@@ -42,6 +43,7 @@ export default function App(): React.JSX.Element {
   const [rec, setRec] = useState<RecorderHandles | null>(null)
   const [paused, setPaused] = useState(false)
   const [updateVersion, setUpdateVersion] = useState<string | null>(null)
+  const [digestRequested, setDigestRequested] = useState(false)
 
   useEffect(() => window.scribe.update.onReady(setUpdateVersion), [])
 
@@ -152,6 +154,7 @@ export default function App(): React.JSX.Element {
               onRecord={() => setView({ name: 'record' })}
               onSettings={() => setView({ name: 'settings' })}
               onActions={() => setView({ name: 'actions' })}
+              onDigest={() => setDigestRequested(true)}
             />
           )}
           {view.name === 'library' && (
@@ -213,6 +216,13 @@ export default function App(): React.JSX.Element {
           )}
         </div>
       </main>
+
+      <Digest
+        openRequested={digestRequested}
+        onOpenHandled={() => setDigestRequested(false)}
+        onOpenMeeting={openMeeting}
+        onOpenPerson={(person) => setView({ name: 'person', person })}
+      />
 
       <AskWidget
         meetingContext={

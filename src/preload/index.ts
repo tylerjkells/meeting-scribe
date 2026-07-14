@@ -14,6 +14,7 @@ import type {
   PersonSummary,
   RecordingMode,
   TranscriptSegment,
+  WeeklyDigest,
   WhisperModel
 } from '../shared/types'
 
@@ -121,6 +122,9 @@ const api = {
     history: (): Promise<LibraryQA[]> => ipcRenderer.invoke('ask:history'),
     ask: (question: string): Promise<LibraryQA> => ipcRenderer.invoke('ask:ask', question),
     clear: (): Promise<void> => ipcRenderer.invoke('ask:clear')
+  },
+  digest: {
+    build: (): Promise<WeeklyDigest> => ipcRenderer.invoke('digest:build')
   },
   people: {
     list: (): Promise<PersonSummary[]> => ipcRenderer.invoke('people:list'),

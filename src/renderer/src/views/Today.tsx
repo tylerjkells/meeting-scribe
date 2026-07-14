@@ -119,13 +119,15 @@ export function TodayView({
   onOpen,
   onRecord,
   onSettings,
-  onActions
+  onActions,
+  onDigest
 }: {
   meetings: MeetingListItem[]
   onOpen: (id: string) => void
   onRecord: () => void
   onSettings: () => void
   onActions: () => void
+  onDigest: () => void
 }): React.JSX.Element {
   const [settings, setSettings] = useState<AppSettings | null>(null)
   const [events, setEvents] = useState<CalendarEvent[]>([])
@@ -210,6 +212,9 @@ export function TodayView({
       <div className="page-head">
         <h1>Today</h1>
         <div className="page-head-tools">
+          <button className="btn btn-ghost" onClick={onDigest}>
+            Weekly digest
+          </button>
           <span className="count-note">{dateLabel}</span>
         </div>
       </div>

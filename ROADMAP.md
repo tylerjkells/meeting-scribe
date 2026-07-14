@@ -41,7 +41,9 @@ usable in meetings that touch student data.
       in-app, editable recap draft (TL;DR, decisions, action items with owners and dues, open
       questions) with copy buttons for subject and body — paste into any mail client (v0.6.0).
 - [ ] **Task push** — send an action item (owner, due date) to ClickUp / Microsoft To Do.
-- [ ] **Weekly digest** — what's open, what's overdue, what you committed to this week.
+- [x] **Weekly digest** — a Monday prompt (open or dismiss, once per week) presenting last
+      week's meetings, your open items, anything open 2+ weeks, and who owes what; also
+      openable any day from the Today page (v0.7.0).
 
 ## 4. Capture fidelity
 
