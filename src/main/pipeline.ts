@@ -76,7 +76,7 @@ export async function summarizeMeeting(id: string): Promise<void> {
   const settings = getSettings()
   meeting = update(meeting, { stage: 'summarizing', error: undefined })
   try {
-    const summary = await summarizeTranscript(transcript, settings.claudeModel)
+    const summary = await summarizeTranscript(transcript, settings.claudeModel, meeting.attendees)
     const keepUserTitle =
       meeting.title && !/^(Virtual meeting|Imported meeting|Meeting) · /.test(meeting.title)
     update(meeting, {

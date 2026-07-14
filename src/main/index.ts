@@ -223,6 +223,7 @@ function registerIpc(): void {
         const event = await findLiveEvent(meeting.createdAt)
         if (event) {
           meeting.title = event.title
+          if (event.attendees.length > 0) meeting.attendees = event.attendees
           writeMeeting(meeting)
         }
       } catch {

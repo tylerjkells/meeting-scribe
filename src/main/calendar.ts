@@ -31,6 +31,33 @@ function asText(v: unknown): string {
   return ''
 }
 
+interface IcsPerson {
+  params?: { CN?: string }
+  val?: string
+}
+
+/** attendee + organizer display names; feeds without attendee data yield [] */
+function parseAttendees(ev: VEvent): string[] {
+  const raw = (ev as unknown as { attendee?: IcsPerson | IcsPerson[]; organizer?: IcsPerson })
+  const people = [
+    ...(Array.isArray(raw.attendee) ? raw.attendee : raw.attendee ? [raw.attendee] : []),
+    ...(raw.organizer ? [raw.organizer] : [])
+  ]
+  const seen = new Set<string>()
+  const names: string[] = []
+  for (const p of people) {
+    const name =
+      p.params?.CN?.trim() ||
+      // fall back to the mailbox name of the email address
+      (p.val ?? '').replace(/^mailto:/i, '').split('@')[0].trim()
+    if (!name || seen.has(name.toLowerCase())) continue
+    seen.add(name.toLowerCase())
+    names.push(name)
+    if (names.length >= 12) break
+  }
+  return names
+}
+
 const JOIN_RE =
   /https?:\/\/[^\s"<>]*(?:zoom\.us|webex\.com|teams\.microsoft\.com|teams\.live\.com|meet\.google\.com|gotomeeting\.com)[^\s"<>]*/i
 
@@ -76,7 +103,8 @@ export async function refreshCalendar(force = false): Promise<CalendarEvent[]> {
       title: asText(ev.summary).trim() || '(untitled)',
       allDay,
       location: asText(ev.location).trim() || null,
-      joinUrl: findJoinUrl(asText(ev.location), asText(ev.description), asText((ev as unknown as { url?: unknown }).url))
+      joinUrl: findJoinUrl(asText(ev.location), asText(ev.description), asText((ev as unknown as { url?: unknown }).url)),
+      attendees: parseAttendees(ev)
     }
 
     if (ev.rrule) {

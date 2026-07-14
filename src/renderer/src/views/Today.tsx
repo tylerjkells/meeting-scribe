@@ -11,6 +11,32 @@ const STOP_WORDS = new Set([
   'the', 'and', 'for', 'with', 'meeting', 'call', 'sync', 'weekly', 'monthly', 'daily', 'check'
 ])
 
+/**
+ * The location field on virtual/hybrid events often carries platform
+ * boilerplate ("Microsoft Teams Meeting") or the join URL itself; keep only
+ * the parts that name a real place.
+ */
+function cleanLocation(location: string | null): string | null {
+  if (!location) return null
+  const parts = location
+    .split(';')
+    .map((p) => p.trim())
+    .filter(
+      (p) =>
+        p.length > 0 &&
+        !/^https?:\/\//i.test(p) &&
+        !/^(microsoft teams|zoom|webex|google) meeting$/i.test(p) &&
+        !/^microsoft teams$/i.test(p)
+    )
+  return parts.length > 0 ? parts.join('; ') : null
+}
+
+function attendeeLabel(attendees: string[]): string {
+  const shown = attendees.slice(0, 4)
+  const extra = attendees.length - shown.length
+  return `with ${shown.join(', ')}${extra > 0 ? ` +${extra}` : ''}`
+}
+
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
 }
@@ -162,6 +188,7 @@ export function TodayView({
                 const relatedMeeting = relatedId
                   ? meetings.find((m) => m.id === relatedId)
                   : undefined
+                const room = cleanLocation(ev.location)
                 return (
                   <div className={`sched-row ${live ? 'live' : ''} ${past ? 'past' : ''}`} key={ev.id}>
                     <span className="sched-time">
@@ -173,14 +200,17 @@ export function TodayView({
                         {live && <span className="sched-now">Now</span>}
                         {ev.title}
                       </span>
-                      {(ev.location || ev.joinUrl || relatedMeeting) && (
+                      {(room || ev.joinUrl || ev.attendees.length > 0 || relatedMeeting) && (
                         <span className="sched-meta">
                           {ev.joinUrl && (
                             <a className="sched-join" href={ev.joinUrl} target="_blank" rel="noreferrer">
                               Join link
                             </a>
                           )}
-                          {ev.location && !ev.joinUrl && <span>{ev.location}</span>}
+                          {room && <span>{room}</span>}
+                          {ev.attendees.length > 0 && (
+                            <span title={ev.attendees.join(', ')}>{attendeeLabel(ev.attendees)}</span>
+                          )}
                           {relatedMeeting && (
                             <button
                               className="sched-related"
