@@ -111,6 +111,8 @@ export function SettingsView({
   const [personDraft, setPersonDraft] = useState('')
   const [vocabDraft, setVocabDraft] = useState(settings.vocabulary)
   const [backingUp, setBackingUp] = useState(false)
+  const [claude, setClaude] = useState<{ claudeFound: boolean; configured: boolean } | null>(null)
+  const [claudeNote, setClaudeNote] = useState<{ ok: boolean; msg: string } | null>(null)
   const [backupNote, setBackupNote] = useState<{ ok: boolean; msg: string } | null>(null)
   const [calDraft, setCalDraft] = useState('')
   const [calStatus, setCalStatus] = useState<{ ok: boolean; msg: string } | null>(null)
@@ -121,6 +123,7 @@ export function SettingsView({
   useEffect(() => {
     window.scribe.meetings.storageStats().then(setStorage)
     window.scribe.appVersion().then(setVersion)
+    window.scribe.claude.status().then(setClaude)
   }, [])
 
   useEffect(() => window.scribe.engine.onProgress(setDlProgress), [])
@@ -552,6 +555,65 @@ export function SettingsView({
             </>
           ) : (
             <p className="opt-desc">No meetings stored yet.</p>
+          )}
+        </div>
+      </section>
+
+      <section className="settings-section">
+        <header className="settings-label">
+          <h2>Claude app</h2>
+          <p className="hint">
+            Connect the Claude Desktop app to your meeting library (read-only, via a local MCP
+            server). Then Claude can answer questions about your meetings, build reports and
+            spreadsheets from them, or create tasks in tools like ClickUp — your data only goes
+            where you send it in a conversation.
+          </p>
+        </header>
+        <div className="settings-body">
+          {claude?.configured ? (
+            <div className="field-row">
+              <span className="badge badge-quiet">Connected to Claude Desktop ✓</span>
+              <button
+                className="btn btn-ghost btn-danger"
+                onClick={async () => {
+                  setClaude(await window.scribe.claude.disconnect())
+                  setClaudeNote(null)
+                }}
+              >
+                Disconnect
+              </button>
+            </div>
+          ) : (
+            <div className="field-row">
+              <button
+                className="btn btn-primary"
+                onClick={async () => {
+                  setClaudeNote(null)
+                  try {
+                    setClaude(await window.scribe.claude.connect())
+                    setClaudeNote({
+                      ok: true,
+                      msg: 'Connected. Restart Claude Desktop, then look for "meetingscribe" in its tools.'
+                    })
+                  } catch (err) {
+                    setClaudeNote({
+                      ok: false,
+                      msg: err instanceof Error ? err.message : 'Could not update the Claude config.'
+                    })
+                  }
+                }}
+              >
+                Connect Claude Desktop
+              </button>
+              {claude && !claude.claudeFound && (
+                <span className="opt-desc">Claude Desktop not detected on this PC.</span>
+              )}
+            </div>
+          )}
+          {claudeNote && (
+            <p className={`field-note ${claudeNote.ok ? 'ok' : 'error'}`} role="status">
+              {claudeNote.msg}
+            </p>
           )}
         </div>
       </section>

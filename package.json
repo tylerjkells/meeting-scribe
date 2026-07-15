@@ -1,18 +1,18 @@
 {
   "name": "meeting-scribe",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "Record, transcribe, and AI-summarize your meetings. Locally, privately, no subscription.",
   "main": "out/main/index.js",
   "author": "Tyler Kells",
   "license": "MIT",
   "private": true,
   "scripts": {
-    "dev": "electron-vite dev -w",
-    "build": "electron-vite build",
+    "dev": "node scripts/build-mcp.js && electron-vite dev -w",
+    "build": "electron-vite build && node scripts/build-mcp.js",
     "start": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "predist": "node -e \"const fs=require('fs');for(const d of ['dist-installer/win-unpacked','dist-installer/win-unpacked.tmp'])fs.rmSync(d,{recursive:true,force:true});try{for(const f of fs.readdirSync('dist-installer'))if(/\\.(exe|blockmap|7z)$/.test(f))fs.rmSync('dist-installer/'+f,{force:true})}catch{}\"",
-    "dist": "electron-vite build && node scripts/package.js"
+    "dist": "electron-vite build && node scripts/build-mcp.js && node scripts/package.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.110.0",
@@ -23,6 +23,7 @@
     "react-dom": "^19.2.7"
   },
   "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@types/node": "^26.1.1",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
@@ -30,8 +31,10 @@
     "electron": "^43.1.0",
     "electron-builder": "^26.15.3",
     "electron-vite": "^5.0.0",
+    "esbuild": "^0.28.1",
     "png-to-ico": "^3.0.2",
     "typescript": "^7.0.2",
-    "vite": "^7.3.6"
+    "vite": "^7.3.6",
+    "zod": "^3.25.76"
   }
 }

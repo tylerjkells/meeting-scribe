@@ -5,6 +5,7 @@ Record, transcribe, and AI-summarize your meetings — locally, privately, and w
 - **Record** in-person meetings (your mic) or virtual meetings (your mic **plus** system audio — whatever comes through your speakers/headset from Webex, Teams, Zoom, anything).
 - **Transcribe** on your own machine with [whisper.cpp](https://github.com/ggml-org/whisper.cpp). Audio never leaves your PC. $0, forever.
 - **Summarize** with the Claude API (pay-per-use — typically 1–5 cents per meeting with Haiku): TL;DR, key points, decisions, action items with owners/due dates, and open questions. Meetings are auto-titled from their content.
+- **Claude app connection** — one click in Settings links your library to Claude Desktop through a local, read-only MCP server. Claude can then answer questions about your meetings, build reports and spreadsheets from them, or create tasks in tools you've connected to Claude (like ClickUp).
 - **Ask anything** — a floating assistant on every page. On a meeting page it answers from that meeting's transcript; anywhere else it answers across your whole library ("What did we decide about X?", "What has David committed to?") with citations that jump to the exact transcript moment.
 - **Action items rollup** — every follow-up across all meetings in one checklist, with done-tracking.
 - **People** — a page per colleague: every meeting together, everything they own, and everything you owe them, assembled automatically from owners, attendees, and named speakers.

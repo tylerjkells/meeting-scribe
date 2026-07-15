@@ -48,9 +48,14 @@ usable in meetings that touch student data.
 - [x] **Follow-up email draft** — a "Follow-up email" button on the meeting page opens an
       in-app, editable recap draft (TL;DR, decisions, action items with owners and dues, open
       questions) with copy buttons for subject and body — paste into any mail client (v0.6.0).
-- [ ] **Task push** — send an action item (owner, due date) to ClickUp / Microsoft To Do.
-      *(Tabled for now: the team's ClickUp workspace is complex enough that tying in needs a
-      deliberate mapping exercise first.)*
+- [x] **Claude app connection (MCP server)** — one click in Settings registers a local,
+      read-only MCP server with Claude Desktop exposing the library (list/get/search meetings,
+      action items, people). Claude then handles the "action" side itself: reports,
+      spreadsheets, and task creation in whatever tools the user has connected to Claude —
+      including ClickUp (v0.9.0).
+- [ ] **Native task push** — send an action item (owner, due date) to ClickUp / Microsoft To Do
+      directly from the app, no Claude in the loop. *(Tabled: the team's ClickUp workspace
+      needs a deliberate mapping exercise first; the MCP route covers the workflow meanwhile.)*
 - [x] **Weekly digest** — a Monday prompt (open or dismiss, once per week) presenting last
       week's meetings, your open items, anything open 2+ weeks, and who owes what; also
       openable any day from the Today page (v0.7.0).
