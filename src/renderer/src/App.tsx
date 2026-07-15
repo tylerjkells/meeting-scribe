@@ -12,6 +12,7 @@ import { PeopleView, PersonView } from './views/People'
 import { SeriesView } from './views/Series'
 import { AskWidget } from './AskWidget'
 import { Digest } from './Digest'
+import { WhatsNew } from './WhatsNew'
 import { MicIcon, ListIcon, GearIcon, CheckIcon, TodayIcon, UsersIcon, formatDuration } from './ui'
 
 export type View =
@@ -232,6 +233,7 @@ export default function App(): React.JSX.Element {
         </div>
       </main>
 
+      <WhatsNew />
       <Digest
         openRequested={digestRequested}
         onOpenHandled={() => setDigestRequested(false)}

@@ -2035,6 +2035,28 @@ select.text-input {
   margin-bottom: 0;
 }
 
+/* overdue action items: urgency reads at a glance */
+.action-due.overdue {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
+.backup-folder {
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.whatsnew-box {
+  width: min(520px, 92vw);
+}
+
+.whatsnew-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 /* ---------- ask widget (floating assistant) ---------- */
 
 .askw-fab {

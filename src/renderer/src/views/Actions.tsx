@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { ActionRollupItem } from '../../../shared/types'
-import { formatWhen, OwnerEditor } from '../ui'
+import { formatWhen, isOverdue, OwnerEditor } from '../ui'
 
 export function ActionsView({ onOpen }: { onOpen: (id: string) => void }): React.JSX.Element {
   const [items, setItems] = useState<ActionRollupItem[]>([])
@@ -35,7 +35,14 @@ export function ActionsView({ onOpen }: { onOpen: (id: string) => void }): React
   }
 
   const scoped = useMemo(() => items.filter(matchesWho), [items, who])
-  const open = useMemo(() => scoped.filter((i) => !i.done), [scoped])
+  const open = useMemo(
+    () =>
+      scoped
+        .filter((i) => !i.done)
+        // most urgent first: dated items ascending, undated after
+        .sort((a, b) => ((a.dueDate ?? '9999') < (b.dueDate ?? '9999') ? -1 : 1)),
+    [scoped]
+  )
   const done = useMemo(() => scoped.filter((i) => i.done), [scoped])
   const visible = showDone ? [...open, ...done] : open
 
@@ -164,7 +171,11 @@ export function ActionsView({ onOpen }: { onOpen: (id: string) => void }): React
                     suggestions={knownOwners}
                     onSave={(owner) => setOwner(item, owner)}
                   />
-                  {item.due && <span className="action-due">{item.due}</span>}
+                  {item.due && (
+                    <span className={`action-due ${isOverdue(item) ? 'overdue' : ''}`}>
+                      {item.due}
+                    </span>
+                  )}
                   <button className="rollup-source" onClick={() => onOpen(item.meetingId)}>
                     {item.meetingTitle} · {formatWhen(item.createdAt)}
                   </button>

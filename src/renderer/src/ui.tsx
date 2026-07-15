@@ -80,6 +80,14 @@ export function formatDuration(ms: number): string {
     : `${m}:${String(s).padStart(2, '0')}`
 }
 
+/** a dated, not-done action item whose due day has passed */
+export function isOverdue(item: { dueDate?: string; done?: boolean }): boolean {
+  if (!item.dueDate || item.done) return false
+  const now = new Date()
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+  return item.dueDate < today
+}
+
 export function formatWhen(iso: string): string {
   const d = new Date(iso)
   const now = new Date()

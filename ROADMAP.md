@@ -68,7 +68,19 @@ usable in meetings that touch student data.
       to Whisper as a decoding prompt (whole-file and live chunks) and to the summarizer as a
       spelling glossary (v0.7.0).
 
-## 5. Multi-device (future)
+## 5. Daily-driver hardening
+
+- [x] **Always-on** — close to tray, launch at login (hidden), global Ctrl+Alt+R record
+      shortcut; the nudge and calendar stay on duty all day (v0.8.0).
+- [x] **Backups** — on-demand zip backup plus weekly automatic backups to a chosen folder,
+      pruned to the last 8; audio optional (v0.8.0).
+- [x] **Real due dates** — free-text dues parsed into dates; urgency sorting and overdue
+      flags across Action items, Today, People, Series, and the digest (v0.8.0).
+- [x] **What's new** — a once-per-version card after silent auto-updates (v0.8.0).
+- [ ] **Transcript redaction** — remove a sensitive span from the transcript, summary, and
+      Ask context permanently.
+
+## 6. Multi-device (future)
 
 - [ ] **Data folder location setting** — point the app at a user-chosen folder so two PCs can
       share one library via Syncthing (peer-to-peer, keeps the privacy story intact) or
@@ -79,7 +91,7 @@ usable in meetings that touch student data.
       transcripts and audio stay home.
 - [ ] **Mobile companion app** — someday-maybe; reading and in-person capture only.
 
-## 6. Trust
+## 7. Trust
 
 - [x] **Privacy statement in-app** — a plain-language Privacy section in Settings stating
       exactly what leaves the machine and when (v0.7.0).

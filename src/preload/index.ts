@@ -135,6 +135,10 @@ const api = {
   digest: {
     build: (): Promise<WeeklyDigest> => ipcRenderer.invoke('digest:build')
   },
+  backup: {
+    run: (): Promise<{ path: string; bytes: number } | null> => ipcRenderer.invoke('backup:run'),
+    chooseFolder: (): Promise<AppSettings> => ipcRenderer.invoke('backup:chooseFolder')
+  },
   series: {
     siblings: (meetingId: string): Promise<string[]> =>
       ipcRenderer.invoke('series:siblings', meetingId),

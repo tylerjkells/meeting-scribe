@@ -17,6 +17,9 @@ Record, transcribe, and AI-summarize your meetings — locally, privately, and w
 - **Record nudge** — a system notification when a calendared meeting starts and nothing is recording, so you never lose a meeting to a forgotten record button. One click lands you on the Record page.
 - **Follow-up email** — one click drafts a recap right in the app (TL;DR, decisions, action items with owners, open questions); edit it, copy it, paste it into any mail client.
 - **Color schemes** — Studio (default), Rowan (brown & gold), Slate (cool blue), and Paper (light), switchable in Settings.
+- **Always on** — closes to the tray, optionally launches at login, and Ctrl+Alt+R opens the Record page from anywhere.
+- **Backups** — one-click library backup, plus automatic weekly backups to a folder of your choosing (last 8 kept, audio optional).
+- **Overdue awareness** — free-text due dates ("Friday", "July 21") are parsed into real dates, so action items sort by urgency and overdue ones show red.
 - Pause/resume while recording, search the library (press `/`), copy summaries as Markdown, export full meetings to `.md`.
 
 ## Running in development

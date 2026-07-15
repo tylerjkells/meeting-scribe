@@ -1,4 +1,5 @@
 import { listMeetings, readMeeting } from './store'
+import { parseDueDate } from './dates'
 import type { ActionRollupItem, SeriesData } from '../shared/types'
 
 // ---------------------------------------------------------------------------
@@ -54,7 +55,8 @@ export function seriesData(title: string): SeriesData {
         task: a.task,
         owner: a.owner,
         due: a.due,
-        done: false
+        done: false,
+        dueDate: parseDueDate(a.due, m.createdAt) ?? undefined
       })
     })
   }

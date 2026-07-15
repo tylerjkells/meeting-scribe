@@ -43,6 +43,9 @@ import { listPeople, personProfile } from './people'
 import { buildDigest } from './digest'
 import { seriesSiblings, seriesData } from './series'
 import { identifySpeakers } from './identify'
+import { applySystemSettings, isQuitting, startHidden } from './system'
+import { runBackup, startAutoBackup } from './backup'
+import { parseDueDate } from './dates'
 import { engineStatus, setupEngine } from './whisper'
 import { processMeeting, summarizeMeeting } from './pipeline'
 import { askAboutMeeting, testApiKey } from './summarize'
@@ -83,7 +86,17 @@ function createWindow(): BrowserWindow {
     }
   })
 
-  win.on('ready-to-show', () => win.show())
+  win.on('ready-to-show', () => {
+    // a hidden (login) start stays in the tray — unless there is no tray
+    if (!startHidden() || !getSettings().closeToTray) win.show()
+  })
+  // closing hides to the tray (when enabled); quitting comes from the tray menu
+  win.on('close', (e) => {
+    if (!isQuitting() && getSettings().closeToTray) {
+      e.preventDefault()
+      win.hide()
+    }
+  })
   win.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
     return { action: 'deny' }
@@ -169,6 +182,8 @@ app.whenReady().then(() => {
   createWindow()
   setupAutoUpdate()
   startRecordNudge()
+  applySystemSettings()
+  startAutoBackup()
 
   // Repair pre-0.2.1 recordings whose webm lacks a duration header (seeking)
   patchLegacyAudioDurations().catch(() => 0)
@@ -212,7 +227,11 @@ function setupAutoUpdate(): void {
 function registerIpc(): void {
   // --- settings ---
   ipcMain.handle('settings:get', () => getSettings())
-  ipcMain.handle('settings:update', (_e, patch: Partial<AppSettings>) => updateSettings(patch))
+  ipcMain.handle('settings:update', (_e, patch: Partial<AppSettings>) => {
+    const next = updateSettings(patch)
+    applySystemSettings()
+    return next
+  })
   ipcMain.handle('settings:setApiKey', (_e, key: string | null) => setApiKey(key))
   ipcMain.handle('settings:testApiKey', (_e, key: string) => testApiKey(key))
 
@@ -451,6 +470,30 @@ function registerIpc(): void {
 
   ipcMain.handle('digest:build', () => buildDigest())
 
+  // --- backup ---
+  ipcMain.handle('backup:run', async (e) => {
+    const win = BrowserWindow.fromWebContents(e.sender)
+    const result = await dialog.showSaveDialog(win!, {
+      title: 'Back up library',
+      defaultPath: join(
+        app.getPath('documents'),
+        `MeetingScribe-backup-${new Date().toISOString().slice(0, 10)}.zip`
+      ),
+      filters: [{ name: 'Zip archive', extensions: ['zip'] }]
+    })
+    if (result.canceled || !result.filePath) return null
+    return runBackup(result.filePath, getSettings().backupSkipAudio)
+  })
+  ipcMain.handle('backup:chooseFolder', async (e) => {
+    const win = BrowserWindow.fromWebContents(e.sender)
+    const result = await dialog.showOpenDialog(win!, {
+      title: 'Choose a folder for weekly backups',
+      properties: ['openDirectory', 'createDirectory']
+    })
+    if (result.canceled || !result.filePaths[0]) return getSettings()
+    return updateSettings({ backupFolder: result.filePaths[0] })
+  })
+
   // --- meeting series ---
   ipcMain.handle('series:siblings', (_e, meetingId: string) => seriesSiblings(meetingId))
   ipcMain.handle('series:get', (_e, title: string) => seriesData(title))
@@ -473,7 +516,8 @@ function registerIpc(): void {
           task: a.task,
           owner: a.owner,
           due: a.due,
-          done: a.done ?? false
+          done: a.done ?? false,
+          dueDate: parseDueDate(a.due, m.createdAt) ?? undefined
         })
       })
     }

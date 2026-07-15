@@ -1,4 +1,5 @@
 import { listMeetings, readMeeting } from './store'
+import { parseDueDate } from './dates'
 import type { ActionRollupItem, WeeklyDigest } from '../shared/types'
 
 // ---------------------------------------------------------------------------
@@ -43,7 +44,8 @@ export function buildDigest(): WeeklyDigest {
         task: a.task,
         owner: a.owner,
         due: a.due,
-        done: false
+        done: false,
+        dueDate: parseDueDate(a.due, m.createdAt) ?? undefined
       }
       const owner = a.owner?.trim().toLowerCase()
       if (owner === 'me') {
@@ -59,6 +61,12 @@ export function buildDigest(): WeeklyDigest {
   }
 
   const weekLabel = now.toLocaleDateString(undefined, { month: 'long', day: 'numeric' })
+
+  // most urgent first: dated items ascending, undated after
+  const byUrgency = (a: ActionRollupItem, b: ActionRollupItem): number =>
+    (a.dueDate ?? '9999') < (b.dueDate ?? '9999') ? -1 : 1
+  myOpen.sort(byUrgency)
+  aging.sort(byUrgency)
 
   return {
     weekLabel,

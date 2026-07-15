@@ -31,6 +31,36 @@ const CLAUDE_MODELS = [
   { id: 'claude-opus-4-8', title: 'Claude Opus 4.8', desc: 'Highest quality, highest cost.' }
 ]
 
+function SwitchRow({
+  title,
+  desc,
+  checked,
+  onToggle
+}: {
+  title: string
+  desc: string
+  checked: boolean
+  onToggle: (value: boolean) => void
+}): React.JSX.Element {
+  return (
+    <div className="switch-row">
+      <span className="switch-label">
+        <span className="opt-title">{title}</span>
+        <span className="opt-desc">{desc}</span>
+      </span>
+      <button
+        className={`switch ${checked ? 'on' : ''}`}
+        role="switch"
+        aria-checked={checked}
+        aria-label={title}
+        onClick={() => onToggle(!checked)}
+      >
+        <span className="switch-knob" aria-hidden="true" />
+      </button>
+    </div>
+  )
+}
+
 function OptRow({
   title,
   desc,
@@ -80,6 +110,8 @@ export function SettingsView({
   const [downloading, setDownloading] = useState<WhisperModel | null>(null)
   const [personDraft, setPersonDraft] = useState('')
   const [vocabDraft, setVocabDraft] = useState(settings.vocabulary)
+  const [backingUp, setBackingUp] = useState(false)
+  const [backupNote, setBackupNote] = useState<{ ok: boolean; msg: string } | null>(null)
   const [calDraft, setCalDraft] = useState('')
   const [calStatus, setCalStatus] = useState<{ ok: boolean; msg: string } | null>(null)
   const [connectingCal, setConnectingCal] = useState(false)
@@ -135,6 +167,27 @@ export function SettingsView({
         setDownloading(null)
         setDlProgress(null)
       }
+    }
+  }
+
+  async function backupNow(): Promise<void> {
+    setBackingUp(true)
+    setBackupNote(null)
+    try {
+      const result = await window.scribe.backup.run()
+      if (result) {
+        setBackupNote({
+          ok: true,
+          msg: `Backed up to ${result.path} (${formatBytes(result.bytes)}).`
+        })
+      }
+    } catch (err) {
+      setBackupNote({
+        ok: false,
+        msg: err instanceof Error ? err.message : 'Backup failed.'
+      })
+    } finally {
+      setBackingUp(false)
     }
   }
 
@@ -500,6 +553,92 @@ export function SettingsView({
           ) : (
             <p className="opt-desc">No meetings stored yet.</p>
           )}
+        </div>
+      </section>
+
+      <section className="settings-section">
+        <header className="settings-label">
+          <h2>System</h2>
+          <p className="hint">
+            Keep MeetingScribe on duty in the background — the record nudge and calendar only
+            work while the app is running.
+          </p>
+        </header>
+        <div className="settings-body">
+          <SwitchRow
+            title="Close to tray"
+            desc="The ✕ button hides the app to the system tray instead of quitting. Quit from the tray menu."
+            checked={settings.closeToTray}
+            onToggle={async (v) => onChange(await window.scribe.settings.update({ closeToTray: v }))}
+          />
+          <SwitchRow
+            title="Launch at login"
+            desc="Start hidden in the tray when Windows starts. (Applies to the installed app, not dev runs.)"
+            checked={settings.launchAtLogin}
+            onToggle={async (v) =>
+              onChange(await window.scribe.settings.update({ launchAtLogin: v }))
+            }
+          />
+          <SwitchRow
+            title="Global record shortcut"
+            desc="Ctrl+Alt+R brings MeetingScribe forward on the Record page from anywhere."
+            checked={settings.recordHotkey}
+            onToggle={async (v) =>
+              onChange(await window.scribe.settings.update({ recordHotkey: v }))
+            }
+          />
+        </div>
+      </section>
+
+      <section className="settings-section">
+        <header className="settings-label">
+          <h2>Backup</h2>
+          <p className="hint">
+            The library lives in one folder on this PC. Back it up on demand, or pick a folder
+            (a synced one works well) for automatic weekly backups — the last 8 are kept.
+          </p>
+        </header>
+        <div className="settings-body">
+          <div className="field-row">
+            <button className="btn" onClick={backupNow} disabled={backingUp}>
+              {backingUp ? 'Backing up…' : 'Back up now…'}
+            </button>
+            {settings.backupFolder ? (
+              <>
+                <span className="opt-desc backup-folder" title={settings.backupFolder}>
+                  Weekly → {settings.backupFolder}
+                </span>
+                <button
+                  className="btn btn-ghost"
+                  onClick={async () =>
+                    onChange(await window.scribe.settings.update({ backupFolder: null }))
+                  }
+                >
+                  Turn off weekly
+                </button>
+              </>
+            ) : (
+              <button
+                className="btn btn-ghost"
+                onClick={async () => onChange(await window.scribe.backup.chooseFolder())}
+              >
+                Choose weekly backup folder…
+              </button>
+            )}
+          </div>
+          {backupNote && (
+            <p className={`field-note ${backupNote.ok ? 'ok' : 'error'}`} role="status">
+              {backupNote.msg}
+            </p>
+          )}
+          <SwitchRow
+            title="Skip audio in backups"
+            desc="Transcripts, summaries, and notes only — archives stay small. Audio is the bulky part."
+            checked={settings.backupSkipAudio}
+            onToggle={async (v) =>
+              onChange(await window.scribe.settings.update({ backupSkipAudio: v }))
+            }
+          />
         </div>
       </section>
 

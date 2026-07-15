@@ -6,7 +6,7 @@ import type {
   EventBrief,
   MeetingListItem
 } from '../../../shared/types'
-import { ChevronIcon, formatDuration, formatWhen, MicIcon, StageBadge } from '../ui'
+import { ChevronIcon, formatDuration, formatWhen, isOverdue, MicIcon, StageBadge } from '../ui'
 
 /**
  * The location field on virtual/hybrid events often carries platform
@@ -185,7 +185,10 @@ export function TodayView({
 
   const todayMeetings = useMemo(() => meetings.filter((m) => isToday(m.createdAt)), [meetings])
   const myOpenActions = useMemo(
-    () => actions.filter((a) => !a.done && a.owner?.toLowerCase() === 'me'),
+    () =>
+      actions
+        .filter((a) => !a.done && a.owner?.toLowerCase() === 'me')
+        .sort((a, b) => ((a.dueDate ?? '9999') < (b.dueDate ?? '9999') ? -1 : 1)),
     [actions]
   )
   const timedEvents = events.filter((e) => !e.allDay)
@@ -367,7 +370,11 @@ export function TodayView({
                     <div className="rollup-body">
                       <span className="rollup-task">{item.task}</span>
                       <span className="rollup-meta">
-                        {item.due && <span className="action-due">{item.due}</span>}
+                        {item.due && (
+                          <span className={`action-due ${isOverdue(item) ? 'overdue' : ''}`}>
+                            {item.due}
+                          </span>
+                        )}
                         <button className="rollup-source" onClick={() => onOpen(item.meetingId)}>
                           {item.meetingTitle}
                         </button>
