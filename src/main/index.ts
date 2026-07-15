@@ -118,6 +118,22 @@ protocol.registerSchemesAsPrivileged([
 // Windows toasts need the app identity to match the installed shortcut
 app.setAppUserModelId('com.tylerkells.meetingscribe')
 
+// One instance only: with close-to-tray, a "closed" app is still running, and
+// a second launch would fight it for the same data folder. Launching again
+// just brings the existing window forward.
+if (!app.requestSingleInstanceLock()) {
+  app.quit()
+} else {
+  app.on('second-instance', () => {
+    const win = BrowserWindow.getAllWindows()[0]
+    if (win) {
+      if (win.isMinimized()) win.restore()
+      win.show()
+      win.focus()
+    }
+  })
+}
+
 app.whenReady().then(() => {
   // System-audio (loopback) capture for virtual meetings: when the renderer
   // calls getDisplayMedia we hand it a screen source with loopback audio and
