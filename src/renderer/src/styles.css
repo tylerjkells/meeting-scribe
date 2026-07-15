@@ -2689,7 +2689,8 @@ input[type='date'] {
 
 .calendar-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  /* minmax(0,…): long nowrap event titles must truncate, not widen their column */
+  grid-template-columns: repeat(7, minmax(0, 1fr));
 }
 
 .calendar-weekdays span {
