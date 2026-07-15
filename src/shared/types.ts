@@ -152,6 +152,13 @@ export interface EventBrief {
   meetingId: string
   meetingTitle: string
   createdAt: string
+  /**
+   * true when matched by topic words rather than exact title — the brief's
+   * lists are then filtered to points mentioning those words
+   */
+  related: boolean
+  /** the words a related match was filtered by */
+  filterWords?: string[]
   tldr: string | null
   decisions: string[]
   openActions: { task: string; owner: string | null; due: string | null }[]

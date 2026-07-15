@@ -67,6 +67,12 @@ function BriefPanel({
       >
         {brief.meetingTitle} · {formatWhen(brief.createdAt)} →
       </button>
+      {brief.related && brief.filterWords && (
+        <span className="brief-filternote">
+          Only points mentioning {brief.filterWords.map((w) => `“${w}”`).join(', ')} — open the
+          meeting for everything.
+        </span>
+      )}
       {decisions.length > 0 && (
         <span className="brief-block">
           <span className="brief-label">Decided</span>
@@ -302,7 +308,9 @@ export function TodayView({
                               <span className={`chevron ${briefOpen ? 'open' : ''}`} aria-hidden="true">
                                 <ChevronIcon />
                               </span>
-                              Last met {formatWhen(brief.createdAt)}
+                              {brief.related
+                                ? 'Related notes'
+                                : `Last met ${formatWhen(brief.createdAt)}`}
                             </button>
                           )}
                         </span>

@@ -1772,6 +1772,11 @@ select.text-input {
   color: var(--accent-strong);
 }
 
+.brief-filternote {
+  font-size: 11.5px;
+  color: var(--ink-faint);
+}
+
 .brief-block {
   display: flex;
   flex-direction: column;
