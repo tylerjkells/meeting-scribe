@@ -313,6 +313,10 @@ function registerIpc(): void {
     if (!m) return null
     m.title = title.trim() || m.title
     writeMeeting(m)
+    // Today and the calendar list by title; tell every window
+    for (const win of BrowserWindow.getAllWindows()) {
+      win.webContents.send('meeting:updated', m)
+    }
     return m
   })
   ipcMain.handle('meetings:delete', (_e, id: string) => deleteMeeting(id))
