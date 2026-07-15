@@ -111,7 +111,11 @@ export function SettingsView({
   const [personDraft, setPersonDraft] = useState('')
   const [vocabDraft, setVocabDraft] = useState(settings.vocabulary)
   const [backingUp, setBackingUp] = useState(false)
-  const [claude, setClaude] = useState<{ claudeFound: boolean; configured: boolean } | null>(null)
+  const [claude, setClaude] = useState<{
+    claudeFound: boolean
+    configured: boolean
+    claudeRunning: boolean
+  } | null>(null)
   const [claudeNote, setClaudeNote] = useState<{ ok: boolean; msg: string } | null>(null)
   const [backupNote, setBackupNote] = useState<{ ok: boolean; msg: string } | null>(null)
   const [calDraft, setCalDraft] = useState('')
@@ -566,7 +570,8 @@ export function SettingsView({
             Connect the Claude Desktop app to your meeting library (read-only, via a local MCP
             server). Then Claude can answer questions about your meetings, build reports and
             spreadsheets from them, or create tasks in tools like ClickUp — your data only goes
-            where you send it in a conversation.
+            where you send it in a conversation. Order matters: quit Claude Desktop fully (tray →
+            Quit), connect here, then start it.
           </p>
         </header>
         <div className="settings-body">
@@ -593,7 +598,7 @@ export function SettingsView({
                     setClaude(await window.scribe.claude.connect())
                     setClaudeNote({
                       ok: true,
-                      msg: 'Connected. Restart Claude Desktop, then look for "meetingscribe" in its tools.'
+                      msg: 'Connected. Now start Claude Desktop — meetingscribe appears under Settings → Developer and in the chat tools menu.'
                     })
                   } catch (err) {
                     setClaudeNote({

@@ -1,4 +1,5 @@
 import { app } from 'electron'
+import { execFileSync } from 'child_process'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
 
@@ -34,6 +35,25 @@ export interface ClaudeConnection {
   claudeFound: boolean
   /** our entry is present in its config */
   configured: boolean
+  /**
+   * Claude Desktop is currently running. It owns its config file and
+   * rewrites it from memory, so edits made while it runs get clobbered —
+   * the connect flow must happen while it is fully quit.
+   */
+  claudeRunning: boolean
+}
+
+function claudeIsRunning(): boolean {
+  if (process.platform !== 'win32') return false
+  try {
+    const out = execFileSync('tasklist', ['/FI', 'IMAGENAME eq Claude.exe', '/NH'], {
+      encoding: 'utf-8',
+      windowsHide: true
+    })
+    return /claude\.exe/i.test(out)
+  } catch {
+    return false
+  }
 }
 
 export function claudeConnectionStatus(): ClaudeConnection {
@@ -47,13 +67,18 @@ export function claudeConnectionStatus(): ClaudeConnection {
   } catch {
     // missing or unreadable config: not configured
   }
-  return { claudeFound, configured }
+  return { claudeFound, configured, claudeRunning: claudeIsRunning() }
 }
 
 export function connectClaude(): ClaudeConnection {
   if (!existsSync(claudeDir())) {
     throw new Error(
       'Claude Desktop does not appear to be installed (no Claude folder in AppData). Install it from claude.ai/download first.'
+    )
+  }
+  if (claudeIsRunning()) {
+    throw new Error(
+      'Quit Claude Desktop first (tray icon → Quit) — it rewrites its config file on exit and would erase this connection. Then connect here, then start Claude Desktop.'
     )
   }
   if (!existsSync(bundledServerPath())) {

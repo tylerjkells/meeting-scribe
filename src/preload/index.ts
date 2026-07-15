@@ -136,11 +136,11 @@ const api = {
     build: (): Promise<WeeklyDigest> => ipcRenderer.invoke('digest:build')
   },
   claude: {
-    status: (): Promise<{ claudeFound: boolean; configured: boolean }> =>
+    status: (): Promise<{ claudeFound: boolean; configured: boolean; claudeRunning: boolean }> =>
       ipcRenderer.invoke('claude:status'),
-    connect: (): Promise<{ claudeFound: boolean; configured: boolean }> =>
+    connect: (): Promise<{ claudeFound: boolean; configured: boolean; claudeRunning: boolean }> =>
       ipcRenderer.invoke('claude:connect'),
-    disconnect: (): Promise<{ claudeFound: boolean; configured: boolean }> =>
+    disconnect: (): Promise<{ claudeFound: boolean; configured: boolean; claudeRunning: boolean }> =>
       ipcRenderer.invoke('claude:disconnect')
   },
   backup: {
