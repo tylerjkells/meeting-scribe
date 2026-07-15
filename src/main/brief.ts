@@ -29,7 +29,7 @@ function isToday(iso: string): boolean {
  * exactly; otherwise fall back to "every significant word appears somewhere
  * in the meeting" like library search.
  */
-function findSeriesMeeting(eventTitle: string): Meeting | null {
+function findSeriesMeeting(eventTitle: string): { meeting: Meeting; related: boolean } | null {
   const items = listMeetings() // newest first
   const norm = eventTitle.trim().toLowerCase()
 
@@ -37,7 +37,7 @@ function findSeriesMeeting(eventTitle: string): Meeting | null {
     if (isToday(it.createdAt)) continue
     if (it.title.trim().toLowerCase() === norm) {
       const m = readMeeting(it.id)
-      if (m) return m
+      if (m) return { meeting: m, related: false }
     }
   }
 
@@ -55,24 +55,35 @@ function findSeriesMeeting(eventTitle: string): Meeting | null {
     ]
       .join(' ')
       .toLowerCase()
-    if (words.every((w) => haystack.includes(w))) return m
+    if (words.every((w) => haystack.includes(w))) return { meeting: m, related: true }
   }
   return null
 }
 
 export function briefForEvent(eventTitle: string): EventBrief | null {
-  const meeting = findSeriesMeeting(eventTitle)
-  if (!meeting) return null
+  const match = findSeriesMeeting(eventTitle)
+  if (!match) return null
+  const { meeting, related } = match
   const s = meeting.summary
+
+  // a same-series brief shows everything; a topic-matched meeting shows only
+  // the points that mention the topic (nobody prepping for "Canvas Instructor
+  // Build" needs that meeting's unrelated errands)
+  const words = related ? significantWords(eventTitle) : []
+  const mentions = (text: string): boolean =>
+    !related || words.some((w) => text.toLowerCase().includes(w))
+
   return {
     meetingId: meeting.id,
     meetingTitle: meeting.title,
     createdAt: meeting.createdAt,
+    related,
+    filterWords: related ? words : undefined,
     tldr: s?.tldr ?? null,
-    decisions: s?.decisions ?? [],
+    decisions: (s?.decisions ?? []).filter(mentions),
     openActions: (s?.actionItems ?? [])
-      .filter((a) => !a.done)
+      .filter((a) => !a.done && mentions(a.task))
       .map((a) => ({ task: a.task, owner: a.owner, due: a.due })),
-    openQuestions: s?.openQuestions ?? []
+    openQuestions: (s?.openQuestions ?? []).filter(mentions)
   }
 }
