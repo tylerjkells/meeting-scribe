@@ -2,6 +2,10 @@ import { useEffect, useState } from 'react'
 
 /** release notes shown once after an update lands (auto-updates are silent) */
 const NOTES: Record<string, string[]> = {
+  '0.9.0': [
+    'Claude app connection: Settings → Claude app links your meeting library to Claude Desktop (read-only, local MCP server). Ask Claude about your meetings, have it build reports from them, or create tasks in connected tools like ClickUp.',
+    'Calendar columns stay aligned no matter how long event titles get.'
+  ],
   '0.8.0': [
     'Live notes: type during a recording — they sharpen the summary and stay editable on the meeting page.',
     'Full calendar: the Library’s month view now shows your whole schedule (toggle with the Schedule chip).',

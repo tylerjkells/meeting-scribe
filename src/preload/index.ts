@@ -135,6 +135,14 @@ const api = {
   digest: {
     build: (): Promise<WeeklyDigest> => ipcRenderer.invoke('digest:build')
   },
+  claude: {
+    status: (): Promise<{ claudeFound: boolean; configured: boolean; claudeRunning: boolean }> =>
+      ipcRenderer.invoke('claude:status'),
+    connect: (): Promise<{ claudeFound: boolean; configured: boolean; claudeRunning: boolean }> =>
+      ipcRenderer.invoke('claude:connect'),
+    disconnect: (): Promise<{ claudeFound: boolean; configured: boolean; claudeRunning: boolean }> =>
+      ipcRenderer.invoke('claude:disconnect')
+  },
   backup: {
     run: (): Promise<{ path: string; bytes: number } | null> => ipcRenderer.invoke('backup:run'),
     chooseFolder: (): Promise<AppSettings> => ipcRenderer.invoke('backup:chooseFolder')

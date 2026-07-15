@@ -46,6 +46,7 @@ import { identifySpeakers } from './identify'
 import { applySystemSettings, isQuitting, startHidden } from './system'
 import { runBackup, startAutoBackup } from './backup'
 import { parseDueDate } from './dates'
+import { claudeConnectionStatus, connectClaude, disconnectClaude } from './claudeConnect'
 import { engineStatus, setupEngine } from './whisper'
 import { processMeeting, summarizeMeeting } from './pipeline'
 import { askAboutMeeting, testApiKey } from './summarize'
@@ -469,6 +470,11 @@ function registerIpc(): void {
   ipcMain.handle('ask:clear', () => clearAskHistory())
 
   ipcMain.handle('digest:build', () => buildDigest())
+
+  // --- Claude Desktop connection ---
+  ipcMain.handle('claude:status', () => claudeConnectionStatus())
+  ipcMain.handle('claude:connect', () => connectClaude())
+  ipcMain.handle('claude:disconnect', () => disconnectClaude())
 
   // --- backup ---
   ipcMain.handle('backup:run', async (e) => {
