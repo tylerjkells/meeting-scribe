@@ -10,8 +10,9 @@ import type { CalendarEvent } from '../shared/types'
 // ---------------------------------------------------------------------------
 
 const CACHE_TTL_MS = 10 * 60 * 1000
-/** how far ahead the feed is expanded (Today view + upcoming context) */
-const WINDOW_DAYS = 7
+/** expansion window around today, wide enough for the month calendar */
+const WINDOW_BACK_DAYS = 62
+const WINDOW_AHEAD_DAYS = 93
 
 let cache: { events: CalendarEvent[]; fetchedAt: number } | null = null
 
@@ -90,8 +91,8 @@ export async function refreshCalendar(force = false): Promise<CalendarEvent[]> {
   }
 
   const data = ical.sync.parseICS(text)
-  const windowStart = startOfToday()
-  const windowEnd = new Date(windowStart.getTime() + WINDOW_DAYS * 86400000)
+  const windowStart = new Date(startOfToday().getTime() - WINDOW_BACK_DAYS * 86400000)
+  const windowEnd = new Date(startOfToday().getTime() + WINDOW_AHEAD_DAYS * 86400000)
   const events: CalendarEvent[] = []
 
   for (const key of Object.keys(data)) {
@@ -153,6 +154,14 @@ export async function refreshCalendar(force = false): Promise<CalendarEvent[]> {
   events.sort((a, b) => a.start.localeCompare(b.start))
   cache = { events, fetchedAt: Date.now() }
   return events
+}
+
+/** Events overlapping a range, for the month calendar. */
+export async function getEventsBetween(fromIso: string, toIso: string): Promise<CalendarEvent[]> {
+  const events = await refreshCalendar()
+  const from = new Date(fromIso)
+  const to = new Date(toIso)
+  return events.filter((e) => new Date(e.end) > from && new Date(e.start) < to)
 }
 
 /** Events overlapping today, for the Today view. */

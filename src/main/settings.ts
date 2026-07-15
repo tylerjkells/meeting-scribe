@@ -10,6 +10,13 @@ interface StoredSettings {
   recordNudge: boolean
   theme: AppTheme
   vocabulary: string
+  closeToTray: boolean
+  launchAtLogin: boolean
+  recordHotkey: boolean
+  backupFolder: string | null
+  backupSkipAudio: boolean
+  /** epoch ms of the last automatic backup */
+  lastBackupAt: number
   people: string[]
   /** base64 of safeStorage-encrypted API key */
   apiKeyEncrypted: string | null
@@ -24,6 +31,12 @@ const DEFAULTS: StoredSettings = {
   recordNudge: true,
   theme: 'studio',
   vocabulary: '',
+  closeToTray: true,
+  launchAtLogin: false,
+  recordHotkey: true,
+  backupFolder: null,
+  backupSkipAudio: true,
+  lastBackupAt: 0,
   people: [],
   apiKeyEncrypted: null,
   calendarUrlEncrypted: null
@@ -63,6 +76,11 @@ export function getSettings(): AppSettings {
     recordNudge: s.recordNudge !== false,
     theme: s.theme ?? 'studio',
     vocabulary: s.vocabulary ?? '',
+    closeToTray: s.closeToTray !== false,
+    launchAtLogin: s.launchAtLogin === true,
+    recordHotkey: s.recordHotkey !== false,
+    backupFolder: s.backupFolder ?? null,
+    backupSkipAudio: s.backupSkipAudio !== false,
     people: s.people ?? [],
     hasApiKey: !!s.apiKeyEncrypted,
     hasCalendar: !!s.calendarUrlEncrypted
@@ -79,6 +97,11 @@ export function updateSettings(
       | 'recordNudge'
       | 'theme'
       | 'vocabulary'
+      | 'closeToTray'
+      | 'launchAtLogin'
+      | 'recordHotkey'
+      | 'backupFolder'
+      | 'backupSkipAudio'
       | 'people'
     >
   >
@@ -90,6 +113,11 @@ export function updateSettings(
   if (typeof patch.recordNudge === 'boolean') s.recordNudge = patch.recordNudge
   if (patch.theme) s.theme = patch.theme
   if (typeof patch.vocabulary === 'string') s.vocabulary = patch.vocabulary.trim()
+  if (typeof patch.closeToTray === 'boolean') s.closeToTray = patch.closeToTray
+  if (typeof patch.launchAtLogin === 'boolean') s.launchAtLogin = patch.launchAtLogin
+  if (typeof patch.recordHotkey === 'boolean') s.recordHotkey = patch.recordHotkey
+  if (patch.backupFolder !== undefined) s.backupFolder = patch.backupFolder
+  if (typeof patch.backupSkipAudio === 'boolean') s.backupSkipAudio = patch.backupSkipAudio
   if (Array.isArray(patch.people)) {
     s.people = dedupeNames(patch.people)
   }
@@ -108,6 +136,16 @@ function dedupeNames(names: string[]): string[] {
     out.push(name)
   }
   return out.sort((a, b) => a.localeCompare(b))
+}
+
+export function getLastBackupAt(): number {
+  return load().lastBackupAt ?? 0
+}
+
+export function setLastBackupAt(ms: number): void {
+  const s = load()
+  s.lastBackupAt = ms
+  persist()
 }
 
 /** Add someone to the team directory (used when assigning a new name). */

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { SeriesData } from '../../../shared/types'
-import { BackIcon, formatDuration, formatWhen } from '../ui'
+import { BackIcon, formatDuration, formatWhen, isOverdue } from '../ui'
 
 /** the running narrative of one recurring meeting */
 export function SeriesView({
@@ -78,7 +78,11 @@ export function SeriesView({
                   <span className="rollup-task">{item.task}</span>
                   <span className="rollup-meta">
                     {item.owner && <span className="owner-btn series-owner">{item.owner}</span>}
-                    {item.due && <span className="action-due">{item.due}</span>}
+                    {item.due && (
+                      <span className={`action-due ${isOverdue(item) ? 'overdue' : ''}`}>
+                        {item.due}
+                      </span>
+                    )}
                     <button className="rollup-source" onClick={() => onOpenMeeting(item.meetingId)}>
                       {formatWhen(item.createdAt)}
                     </button>

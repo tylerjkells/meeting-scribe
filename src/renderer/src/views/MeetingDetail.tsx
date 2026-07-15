@@ -458,6 +458,12 @@ export function MeetingView({
         </Collapse>
       )}
 
+      {(meeting.notes || meeting.stage === 'ready' || meeting.stage === 'transcript-only') && (
+        <Collapse label="Your notes" defaultOpen={!!meeting.notes}>
+          <NotesEditor meeting={meeting} onSaved={setMeeting} />
+        </Collapse>
+      )}
+
       {meeting.summary && (
         <>
           {meeting.summary.actionItems.length > 0 && (
@@ -701,6 +707,39 @@ function EmailDraft({
         </button>
       </div>
     </section>
+  )
+}
+
+/** typed notes attached to the meeting; edits feed the next summary regeneration */
+function NotesEditor({
+  meeting,
+  onSaved
+}: {
+  meeting: Meeting
+  onSaved: (m: Meeting) => void
+}): React.JSX.Element {
+  const [draft, setDraft] = useState(meeting.notes ?? '')
+
+  async function save(): Promise<void> {
+    if (draft.trim() === (meeting.notes ?? '').trim()) return
+    const updated = await window.scribe.meetings.setNotes(meeting.id, draft)
+    if (updated) onSaved(updated)
+  }
+
+  return (
+    <div className="notes-editor">
+      <textarea
+        className="text-input notes-input"
+        placeholder="Notes typed during the meeting land here — you can also add them after the fact."
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={save}
+        aria-label="Meeting notes"
+      />
+      <p className="opt-desc">
+        Notes are folded into the summary — regenerate it after big edits.
+      </p>
+    </div>
   )
 }
 

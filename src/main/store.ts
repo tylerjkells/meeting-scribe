@@ -59,6 +59,35 @@ export function energyPath(id: string): string {
   return join(meetingDir(id), 'energy.json')
 }
 
+function notesPath(id: string): string {
+  return join(meetingDir(id), 'notes.txt')
+}
+
+/** stash live-typed notes next to the in-progress recording (crash-safe) */
+export function stashNotes(id: string, text: string): void {
+  try {
+    if (text.trim()) writeFileSync(notesPath(id), text)
+    else rmSync(notesPath(id), { force: true })
+  } catch {
+    // a failed stash only loses the latest keystrokes
+  }
+}
+
+export function readStashedNotes(id: string): string {
+  try {
+    return readFileSync(notesPath(id), 'utf-8')
+  } catch {
+    return ''
+  }
+}
+
+/** pull stashed notes into the meeting record and clean up the stash file */
+function collectNotes(id: string): string | undefined {
+  const text = readStashedNotes(id).trim()
+  rmSync(notesPath(id), { force: true })
+  return text || undefined
+}
+
 export function readMeeting(id: string): Meeting | null {
   try {
     return JSON.parse(readFileSync(metaPath(id), 'utf-8')) as Meeting
@@ -224,7 +253,8 @@ export async function finishRecording(
     mode: s.mode,
     stage: 'recorded',
     hasAudio: true,
-    transcript
+    transcript,
+    notes: collectNotes(id)
   }
   writeMeeting(meeting)
   return meeting
@@ -326,7 +356,8 @@ export async function recoverOrphanedRecordings(): Promise<Meeting[]> {
       durationMs: Math.round((bytes / 32000) * 1000),
       mode: 'in-person',
       stage: 'recorded',
-      hasAudio: true
+      hasAudio: true,
+      notes: collectNotes(id)
     }
     writeMeeting(meeting)
     recovered.push(meeting)

@@ -1,5 +1,6 @@
 import { listMeetings, readMeeting } from './store'
 import { getSettings } from './settings'
+import { parseDueDate } from './dates'
 import type {
   ActionRollupItem,
   Meeting,
@@ -108,7 +109,8 @@ export function personProfile(name: string): PersonProfile | null {
         task: a.task,
         owner: a.owner,
         due: a.due,
-        done: a.done ?? false
+        done: a.done ?? false,
+        dueDate: parseDueDate(a.due, m.createdAt) ?? undefined
       }
       if (a.owner && norm(a.owner) === key) items.push(rollup)
       else if (a.owner && norm(a.owner) === 'me' && !rollup.done) myCommitments.push(rollup)

@@ -22,19 +22,30 @@ import {
   appendPcm,
   finishRecording,
   cancelRecording,
+  stashNotes,
+  readStashedNotes,
   findAudio,
   meetingsRoot,
   meetingDir,
   recoverOrphanedRecordings
 } from './store'
 import { getSettings, updateSettings, setApiKey, setCalendarUrl, addPerson } from './settings'
-import { refreshCalendar, getTodayEvents, findLiveEvent, clearCalendarCache } from './calendar'
+import {
+  refreshCalendar,
+  getTodayEvents,
+  getEventsBetween,
+  findLiveEvent,
+  clearCalendarCache
+} from './calendar'
 import { startRecordNudge } from './nudge'
 import { briefForEvent } from './brief'
 import { listPeople, personProfile } from './people'
 import { buildDigest } from './digest'
 import { seriesSiblings, seriesData } from './series'
 import { identifySpeakers } from './identify'
+import { applySystemSettings, isQuitting, startHidden } from './system'
+import { runBackup, startAutoBackup } from './backup'
+import { parseDueDate } from './dates'
 import { engineStatus, setupEngine } from './whisper'
 import { processMeeting, summarizeMeeting } from './pipeline'
 import { askAboutMeeting, testApiKey } from './summarize'
@@ -75,7 +86,17 @@ function createWindow(): BrowserWindow {
     }
   })
 
-  win.on('ready-to-show', () => win.show())
+  win.on('ready-to-show', () => {
+    // a hidden (login) start stays in the tray — unless there is no tray
+    if (!startHidden() || !getSettings().closeToTray) win.show()
+  })
+  // closing hides to the tray (when enabled); quitting comes from the tray menu
+  win.on('close', (e) => {
+    if (!isQuitting() && getSettings().closeToTray) {
+      e.preventDefault()
+      win.hide()
+    }
+  })
   win.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
     return { action: 'deny' }
@@ -161,6 +182,8 @@ app.whenReady().then(() => {
   createWindow()
   setupAutoUpdate()
   startRecordNudge()
+  applySystemSettings()
+  startAutoBackup()
 
   // Repair pre-0.2.1 recordings whose webm lacks a duration header (seeking)
   patchLegacyAudioDurations().catch(() => 0)
@@ -204,7 +227,11 @@ function setupAutoUpdate(): void {
 function registerIpc(): void {
   // --- settings ---
   ipcMain.handle('settings:get', () => getSettings())
-  ipcMain.handle('settings:update', (_e, patch: Partial<AppSettings>) => updateSettings(patch))
+  ipcMain.handle('settings:update', (_e, patch: Partial<AppSettings>) => {
+    const next = updateSettings(patch)
+    applySystemSettings()
+    return next
+  })
   ipcMain.handle('settings:setApiKey', (_e, key: string | null) => setApiKey(key))
   ipcMain.handle('settings:testApiKey', (_e, key: string) => testApiKey(key))
 
@@ -254,6 +281,12 @@ function registerIpc(): void {
     }
   )
   ipcMain.handle('rec:cancel', (_e, id: string) => cancelRecording(id))
+  ipcMain.on('rec:stashNotes', (_e, id: string, text: string) => {
+    if (/^[\w-]+$/.test(id)) stashNotes(id, String(text))
+  })
+  ipcMain.handle('rec:readNotes', (_e, id: string) =>
+    /^[\w-]+$/.test(id) ? readStashedNotes(id) : ''
+  )
 
   // --- meetings ---
   ipcMain.handle('meetings:list', () => listMeetings())
@@ -353,6 +386,14 @@ function registerIpc(): void {
     }
   )
 
+  ipcMain.handle('meetings:setNotes', (_e, id: string, text: string) => {
+    const m = readMeeting(id)
+    if (!m) return null
+    m.notes = String(text).trim() || undefined
+    writeMeeting(m)
+    return m
+  })
+
   ipcMain.handle('meetings:identifySpeakers', async (_e, id: string): Promise<Meeting | null> => {
     const meeting = readMeeting(id)
     if (!meeting) throw new Error('Meeting not found')
@@ -397,6 +438,17 @@ function registerIpc(): void {
     return setCalendarUrl(null)
   })
   ipcMain.handle('meetings:briefFor', (_e, eventTitle: string) => briefForEvent(eventTitle))
+  ipcMain.handle('calendar:range', async (_e, fromIso: string, toIso: string) => {
+    if (!getSettings().hasCalendar) return { events: [] }
+    try {
+      return { events: await getEventsBetween(fromIso, toIso) }
+    } catch (err) {
+      return {
+        events: [],
+        error: err instanceof Error ? err.message : 'The calendar feed could not be reached.'
+      }
+    }
+  })
   ipcMain.handle('calendar:today', async () => {
     if (!getSettings().hasCalendar) return { events: [] }
     try {
@@ -417,6 +469,30 @@ function registerIpc(): void {
   ipcMain.handle('ask:clear', () => clearAskHistory())
 
   ipcMain.handle('digest:build', () => buildDigest())
+
+  // --- backup ---
+  ipcMain.handle('backup:run', async (e) => {
+    const win = BrowserWindow.fromWebContents(e.sender)
+    const result = await dialog.showSaveDialog(win!, {
+      title: 'Back up library',
+      defaultPath: join(
+        app.getPath('documents'),
+        `MeetingScribe-backup-${new Date().toISOString().slice(0, 10)}.zip`
+      ),
+      filters: [{ name: 'Zip archive', extensions: ['zip'] }]
+    })
+    if (result.canceled || !result.filePath) return null
+    return runBackup(result.filePath, getSettings().backupSkipAudio)
+  })
+  ipcMain.handle('backup:chooseFolder', async (e) => {
+    const win = BrowserWindow.fromWebContents(e.sender)
+    const result = await dialog.showOpenDialog(win!, {
+      title: 'Choose a folder for weekly backups',
+      properties: ['openDirectory', 'createDirectory']
+    })
+    if (result.canceled || !result.filePaths[0]) return getSettings()
+    return updateSettings({ backupFolder: result.filePaths[0] })
+  })
 
   // --- meeting series ---
   ipcMain.handle('series:siblings', (_e, meetingId: string) => seriesSiblings(meetingId))
@@ -440,7 +516,8 @@ function registerIpc(): void {
           task: a.task,
           owner: a.owner,
           due: a.due,
-          done: a.done ?? false
+          done: a.done ?? false,
+          dueDate: parseDueDate(a.due, m.createdAt) ?? undefined
         })
       })
     }

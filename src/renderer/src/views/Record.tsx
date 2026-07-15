@@ -34,7 +34,29 @@ export function RecordView({
   const [finishing, setFinishing] = useState(false)
   const [liveSegs, setLiveSegs] = useState<TranscriptSegment[]>([])
   const [confirmEl, confirm] = useConfirm()
+  const [notes, setNotes] = useState('')
+  const notesTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const livePanelRef = useRef<HTMLDivElement>(null)
+
+  // notes live next to the in-progress recording on disk, so they survive
+  // navigating away, crashes, and app restarts
+  useEffect(() => {
+    if (!rec) return
+    window.scribe.rec.readNotes(rec.id).then(setNotes)
+  }, [rec])
+
+  function updateNotes(text: string): void {
+    setNotes(text)
+    if (!rec) return
+    if (notesTimer.current) clearTimeout(notesTimer.current)
+    const id = rec.id
+    notesTimer.current = setTimeout(() => window.scribe.rec.stashNotes(id, text), 600)
+  }
+
+  function flushNotes(): void {
+    if (notesTimer.current) clearTimeout(notesTimer.current)
+    if (rec) window.scribe.rec.stashNotes(rec.id, notes)
+  }
 
   useEffect(() => {
     if (!rec) return
@@ -77,6 +99,7 @@ export function RecordView({
   async function stop(): Promise<void> {
     if (!rec || finishing) return
     setFinishing(true)
+    flushNotes()
     try {
       const meeting = await rec.stop()
       setRec(null)
@@ -169,6 +192,14 @@ export function RecordView({
           ))}
         </div>
       )}
+      <textarea
+        className="text-input rec-notes"
+        placeholder="Type notes as you go — names, numbers, decisions. They sharpen the summary and are kept with the meeting."
+        value={notes}
+        onChange={(e) => updateNotes(e.target.value)}
+        onBlur={flushNotes}
+        aria-label="Meeting notes"
+      />
       <p className="mode-hint">
         You can browse other meetings while this records; the sidebar shows a live indicator that
         brings you back here.

@@ -1,0 +1,69 @@
+import { useEffect, useState } from 'react'
+
+/** release notes shown once after an update lands (auto-updates are silent) */
+const NOTES: Record<string, string[]> = {
+  '0.8.0': [
+    'Live notes: type during a recording — they sharpen the summary and stay editable on the meeting page.',
+    'Full calendar: the Library’s month view now shows your whole schedule (toggle with the Schedule chip).',
+    'Always on: closing hides to the tray, launch-at-login optional, and Ctrl+Alt+R opens Record from anywhere.',
+    'Backups: back up the library on demand or weekly to a folder — see Settings.',
+    'Overdue awareness: dated action items sort by urgency and turn red when overdue.'
+  ]
+}
+
+export function WhatsNew(): React.JSX.Element {
+  const [version, setVersion] = useState<string | null>(null)
+
+  useEffect(() => {
+    window.scribe.appVersion().then((v) => {
+      const seen = localStorage.getItem('seenVersion')
+      if (!seen) {
+        // fresh install: nothing to announce
+        localStorage.setItem('seenVersion', v)
+        return
+      }
+      if (seen !== v) {
+        if (NOTES[v]) setVersion(v)
+        else localStorage.setItem('seenVersion', v)
+      }
+    })
+  }, [])
+
+  if (!version) return <></>
+
+  function dismiss(): void {
+    localStorage.setItem('seenVersion', version!)
+    setVersion(null)
+  }
+
+  return (
+    <div className="digest-overlay" onClick={dismiss}>
+      <div
+        className="digest-box whatsnew-box"
+        role="dialog"
+        aria-modal="true"
+        aria-label="What's new"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="digest-head">
+          <h2>New in v{version}</h2>
+          <button className="btn btn-ghost askw-close" onClick={dismiss} aria-label="Close">
+            ✕
+          </button>
+        </div>
+        <div className="digest-body">
+          <ul className="digest-list">
+            {NOTES[version].map((note, i) => (
+              <li key={i}>{note}</li>
+            ))}
+          </ul>
+          <div className="whatsnew-actions">
+            <button className="btn btn-primary" onClick={dismiss}>
+              Nice
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

@@ -2035,6 +2035,28 @@ select.text-input {
   margin-bottom: 0;
 }
 
+/* overdue action items: urgency reads at a glance */
+.action-due.overdue {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
+.backup-folder {
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.whatsnew-box {
+  width: min(520px, 92vw);
+}
+
+.whatsnew-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 /* ---------- ask widget (floating assistant) ---------- */
 
 .askw-fab {
@@ -2735,6 +2757,50 @@ input[type='date'] {
 
 .calendar-card:active {
   transform: scale(0.98);
+}
+
+/* scheduled event (from the calendar feed): quieter than a recording */
+.calendar-event {
+  display: block;
+  width: 100%;
+  font-size: 11.5px;
+  padding: 2px var(--s2);
+  border-radius: 6px;
+  border: 1px dashed var(--line-soft);
+  color: var(--ink-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calendar-event-time {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  margin-right: var(--s1);
+}
+
+/* notes typed while recording */
+.rec-notes {
+  width: min(72ch, 90%);
+  min-height: 96px;
+  max-height: 22vh;
+  resize: vertical;
+  font-size: 13px;
+  line-height: 1.6;
+  text-align: left;
+}
+
+/* notes on the meeting page */
+.notes-editor {
+  max-width: 68ch;
+}
+
+.notes-input {
+  min-height: 110px;
+  resize: vertical;
+  font-size: 13px;
+  line-height: 1.6;
+  margin-bottom: var(--s1);
 }
 
 /* view transitions: opacity/transform only, fast, ease-out */

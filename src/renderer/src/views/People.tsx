@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { PersonProfile, PersonSummary } from '../../../shared/types'
-import { BackIcon, formatWhen } from '../ui'
+import { BackIcon, formatWhen, isOverdue } from '../ui'
 
 export function PeopleView({
   onOpenPerson
@@ -148,7 +148,11 @@ export function PersonView({
                 <div className="rollup-body">
                   <span className="rollup-task">{item.task}</span>
                   <span className="rollup-meta">
-                    {item.due && <span className="action-due">{item.due}</span>}
+                    {item.due && (
+                      <span className={`action-due ${isOverdue(item) ? 'overdue' : ''}`}>
+                        {item.due}
+                      </span>
+                    )}
                     <button className="rollup-source" onClick={() => onOpenMeeting(item.meetingId)}>
                       {item.meetingTitle} · {formatWhen(item.createdAt)}
                     </button>
@@ -176,7 +180,11 @@ export function PersonView({
                 <div className="rollup-body">
                   <span className="rollup-task">{item.task}</span>
                   <span className="rollup-meta">
-                    {item.due && <span className="action-due">{item.due}</span>}
+                    {item.due && (
+                      <span className={`action-due ${isOverdue(item) ? 'overdue' : ''}`}>
+                        {item.due}
+                      </span>
+                    )}
                     <button className="rollup-source" onClick={() => onOpenMeeting(item.meetingId)}>
                       {item.meetingTitle} · {formatWhen(item.createdAt)}
                     </button>

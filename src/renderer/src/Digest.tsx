@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { WeeklyDigest } from '../../shared/types'
-import { formatDuration, formatWhen } from './ui'
+import { formatDuration, formatWhen, isOverdue } from './ui'
 
 /** yyyy-mm-dd of this week's Monday: the "seen it this week" key */
 function mondayKey(d = new Date()): string {
@@ -130,7 +130,11 @@ export function Digest({
                     {digest.myOpen.map((item) => (
                       <li key={`${item.meetingId}-${item.index}`}>
                         {item.task}
-                        {item.due && <span className="action-due digest-due">{item.due}</span>}{' '}
+                        {item.due && (
+                          <span className={`action-due digest-due ${isOverdue(item) ? 'overdue' : ''}`}>
+                            {item.due}
+                          </span>
+                        )}{' '}
                         <button
                           className="link-btn digest-src"
                           onClick={() => go(() => onOpenMeeting(item.meetingId))}

@@ -101,7 +101,8 @@ export async function summarizeTranscript(
   segments: TranscriptSegment[],
   model: string,
   attendees?: string[],
-  vocabulary?: string
+  vocabulary?: string,
+  userNotes?: string
 ): Promise<MeetingSummary> {
   const apiKey = getApiKey()
   if (!apiKey) {
@@ -138,7 +139,11 @@ export async function summarizeTranscript(
     messages: [
       {
         role: 'user',
-        content: `Summarize this meeting transcript:\n\n${transcript}`
+        content:
+          `Summarize this meeting transcript:\n\n${transcript}` +
+          (userNotes?.trim()
+            ? `\n\n<user_notes>\nThe participant typed these notes during the meeting. Treat them as high-signal: they mark what mattered, correct names and numbers, and may state action items or decisions explicitly. Fold them into the summary where the transcript supports them.\n\n${userNotes.trim().slice(0, 8000)}\n</user_notes>`
+            : '')
       }
     ]
   })
