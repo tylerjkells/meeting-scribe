@@ -2,6 +2,15 @@ import { useEffect, useState } from 'react'
 
 /** release notes shown once after an update lands (auto-updates are silent) */
 const NOTES: Record<string, string[]> = {
+  '0.24.0': [
+    'The Projects tab is now called ClickUp, since that is all it ever was.',
+    'Tasks pushed to ClickUp can carry a Requestor. When the list you pick has a Requestor dropdown (the Data Governance lists do), the Send to ClickUp dialog shows it and remembers your last choice. Rows on the ClickUp page show the requestor as a chip.',
+    'The ClickUp page grew up: search across every open task, an Activity button with a badge for what changed since you last looked, a quiet refresh every five minutes, and recent comments right in the expanded row. You can now change priority, hand a task to someone else, and rename it without leaving the app. Subtasks name their parent, only high and urgent priorities get a flag, and the Everyone view loads in half the time.',
+    'Mail reads like an inbox now. Messages group into threads with a count, newsletters and no-reply senders are muted and tucked behind an Automated toggle, and a Mark handled tick hides a message from the list without touching Outlook. Links in a message are clickable, quoted history folds away behind Show earlier messages, senders in your directory link to their People page, search covers the body, and the header warns when nothing has arrived in a day, which usually means the Power Automate flow has stopped.',
+    'A recording with no speech no longer produces a transcript of nothing but [BLANK_AUDIO]. Silence markers are dropped, an empty result becomes a clear message about the likely cause (a muted mic or the wrong device), and the audio is kept so you can try again.',
+    'Re-transcribe any meeting that still has its audio, from the transcript tools or the error banner. Handy after switching to a better speech model in Settings.',
+    'The buttons on empty pages line up again.'
+  ],
   '0.23.0': [
     'Reply drafts now land inside the conversation they answer. Until now a draft went to Outlook as a brand new message with RE: in the subject and nothing tying it to the original, so it sat apart from the thread. Rowan asks Outlook to build a real reply instead, which arrives already addressed, already in the thread, with the original quoted underneath. The drafts flow in Power Automate needs rebuilding for this — Settings → Mail → setup guide walks through the two actions that replace the old one.',
     'Your signature goes on every draft. Outlook only signs what you compose yourself, so drafts filed by Rowan used to arrive bare. Paste your signature once into Settings → Mail and it rides along on everything Rowan files. Copy it straight out of an Outlook message and the formatting comes with it.',
