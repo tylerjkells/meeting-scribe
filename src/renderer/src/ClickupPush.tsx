@@ -1,12 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { ClickupList } from '../../shared/types'
+import type { ClickupDropdownField, ClickupList } from '../../shared/types'
 
 /**
  * "Send to ClickUp" dialog: pick a list (last choice remembered), confirm the
  * task name/description/assignee/due, create the task. Used for a meeting
  * action item (prefilled, credited back to the meeting) and for a task typed
- * from scratch on the Projects page.
+ * from scratch on the ClickUp page.
+ *
+ * If the chosen list has a "Requestor" dropdown custom field (the Data
+ * Governance lists do, inherited from their folder), a Requestor picker
+ * appears and the choice is written to that field on the new task.
  */
+
+const REQUESTOR_KEY = 'clickupPushRequestor'
+
+function findRequestor(fields: ClickupDropdownField[]): ClickupDropdownField | null {
+  return fields.find((f) => f.name.trim().toLowerCase() === 'requestor') ?? null
+}
+
 export function ClickupPushDialog({
   task = '',
   owner = null,
@@ -36,6 +47,9 @@ export function ClickupPushDialog({
   )
   const [assignee, setAssignee] = useState(owner ?? '')
   const [due, setDue] = useState(dueDate ?? '')
+  // the chosen list's Requestor field, if it has one; null while loading / absent
+  const [requestorField, setRequestorField] = useState<ClickupDropdownField | null>(null)
+  const [requestor, setRequestor] = useState(() => localStorage.getItem(REQUESTOR_KEY) ?? '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -46,6 +60,29 @@ export function ClickupPushDialog({
       .then(setLists)
       .catch((err) => setError(err instanceof Error ? err.message : 'Could not load lists'))
   }, [])
+
+  // custom fields follow the list: the Requestor picker only shows on lists
+  // that have the field, and a remembered choice is kept only if it's an option
+  useEffect(() => {
+    setRequestorField(null)
+    if (!listId) return
+    let stale = false
+    window.scribe.clickup
+      .listFields(listId)
+      .then((fields) => {
+        if (stale) return
+        const field = findRequestor(fields)
+        setRequestorField(field)
+        if (field && !field.options.some((o) => o.id === requestor)) setRequestor('')
+      })
+      .catch(() => {
+        // fields unavailable: the task can still be created without one
+      })
+    return () => {
+      stale = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listId])
 
   // lists grouped by folder for the picker
   const groups = useMemo(() => {
@@ -69,11 +106,17 @@ export function ClickupPushDialog({
       name: name.trim(),
       description: description.trim() || undefined,
       assignee: assignee.trim() || undefined,
-      dueDate: due || null
+      dueDate: due || null,
+      customFields:
+        requestorField && requestor ? [{ id: requestorField.id, value: requestor }] : undefined
     })
     setBusy(false)
     if (result.ok && result.url) {
       localStorage.setItem('clickupPushList', listId)
+      if (requestorField) {
+        if (requestor) localStorage.setItem(REQUESTOR_KEY, requestor)
+        else localStorage.removeItem(REQUESTOR_KEY)
+      }
       onDone(result.url)
     } else {
       setError(result.error ?? 'ClickUp rejected the task')
@@ -134,6 +177,23 @@ export function ClickupPushDialog({
             ))}
           </select>
         </label>
+        {requestorField && (
+          <label className="pd-field">
+            <span>{requestorField.name}</span>
+            <select
+              className="text-input"
+              value={requestor}
+              onChange={(e) => setRequestor(e.target.value)}
+            >
+              <option value="">None</option>
+              {requestorField.options.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <div className="pd-grid">
           <label className="pd-field">
             <span>Assignee (name or email)</span>

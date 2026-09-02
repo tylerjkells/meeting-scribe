@@ -183,7 +183,7 @@ export default function App(): React.JSX.Element {
           className={`nav-btn ${view.name === 'projects' ? 'active' : ''}`}
           onClick={() => setView({ name: 'projects' })}
         >
-          <BoardIcon /> Projects
+          <BoardIcon /> ClickUp
         </button>
         <button
           className={`nav-btn ${view.name === 'mail' ? 'active' : ''}`}
@@ -325,7 +325,12 @@ export default function App(): React.JSX.Element {
           {view.name === 'projects' && (
             <ProjectsView onSettings={() => setView({ name: 'settings' })} />
           )}
-          {view.name === 'mail' && <MailView onSettings={() => setView({ name: 'settings' })} />}
+          {view.name === 'mail' && (
+            <MailView
+              onSettings={() => setView({ name: 'settings' })}
+              onOpenPerson={(person) => setView({ name: 'person', person })}
+            />
+          )}
           {view.name === 'toolbox' && <ToolboxView />}
           {view.name === 'import' && (
             <ImportView

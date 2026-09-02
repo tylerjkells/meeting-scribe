@@ -5,7 +5,11 @@ import { randomUUID } from 'crypto'
 import { getClickupToken, setClickupToken } from './settings'
 import type {
   ClickupActivityEvent,
+  ClickupComment,
+  ClickupDropdownField,
   ClickupList,
+  ClickupMember,
+  ClickupRefreshResult,
   ClickupStatusOption,
   ClickupPushInput,
   ClickupPushResult,
@@ -53,6 +57,13 @@ interface RawTeam {
   name: string
   members: RawMember[]
 }
+interface RawCustomField {
+  id: string
+  name: string
+  type: string
+  value?: unknown
+  type_config?: { options?: { id: string; name: string; orderindex?: number }[] }
+}
 interface RawTask {
   id: string
   name: string
@@ -64,8 +75,26 @@ interface RawTask {
   list: { id: string; name: string }
   folder: { name: string; hidden?: boolean } | null
   priority: { priority: string } | null
-  assignees?: { username: string | null; email: string }[]
+  parent?: string | null
+  assignees?: { id: number; username: string | null; email: string }[]
+  custom_fields?: RawCustomField[]
 }
+
+/** The "Requestor" dropdown's chosen option name, if the task's list has one. */
+function requestorOf(fields: RawCustomField[] | undefined): string | null {
+  const f = fields?.find((x) => x.type === 'drop_down' && x.name.trim().toLowerCase() === 'requestor')
+  if (!f || f.value === null || f.value === undefined || f.value === '') return null
+  const options = f.type_config?.options ?? []
+  // ClickUp reports a dropdown's value as the option's orderindex; be
+  // lenient and accept an option id or name too
+  const match =
+    typeof f.value === 'number'
+      ? options.find((o) => o.orderindex === f.value)
+      : options.find((o) => o.id === f.value || o.name === f.value)
+  return match?.name ?? null
+}
+
+const DESCRIPTION_MAX = 4000
 
 let teamCache: RawTeam | null = null
 async function team(): Promise<RawTeam> {
@@ -112,40 +141,101 @@ function toIsoDate(ms: string | null): string | null {
   return isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10)
 }
 
+/** ClickUp pages 100 tasks at a time; beyond this many pages we stop and say so. */
+const MAX_PAGES = 30
+
+/** parent-task names for subtasks whose parent isn't in the fetched set */
+const parentNames = new Map<string, string>()
+
+interface FetchedTasks {
+  tasks: ClickupTask[]
+  /** assignee ids per task, for deriving "mine" from an everyone fetch */
+  assigneeIds: Map<string, number[]>
+  userId: number
+  truncated: boolean
+}
+
 /** Open tasks ordered by due date: the token user's, or everyone's. */
-export async function fetchClickupTasks(scope: 'mine' | 'all'): Promise<ClickupTask[]> {
+async function fetchTasks(scope: 'mine' | 'all'): Promise<FetchedTasks> {
   const { user } = await req<{ user: { id: number } }>('/user')
   const t = await team()
   const filter = scope === 'mine' ? `&assignees[]=${user.id}` : ''
-  const out: ClickupTask[] = []
-  for (let page = 0; page < 10; page++) {
+  const raws: RawTask[] = []
+  let truncated = false
+  for (let page = 0; ; page++) {
+    if (page >= MAX_PAGES) {
+      truncated = true
+      break
+    }
     const r = await req<{ tasks: RawTask[]; last_page?: boolean }>(
       `/team/${t.id}/task?page=${page}${filter}&include_closed=false&subtasks=true&order_by=due_date`
     )
-    for (const raw of r.tasks) {
-      // a done-type status (e.g. "Complete") is finished work even though
-      // ClickUp doesn't count it as closed — without this, tasks marked done
-      // linger in the open list and reappear in the changelog as "new"
-      if (raw.status.type === 'done' || raw.status.type === 'closed') continue
-      out.push({
-        id: raw.id,
-        name: raw.name,
-        description: raw.text_content?.trim() ? raw.text_content.trim().slice(0, 2000) : null,
-        status: raw.status.status,
-        statusColor: raw.status.color,
-        dueDate: toIsoDate(raw.due_date),
-        url: raw.url,
-        listId: raw.list.id,
-        listName: raw.list.name,
-        folderName: raw.folder && !raw.folder.hidden ? raw.folder.name : null,
-        priority: raw.priority?.priority ?? null,
-        dateUpdated: raw.date_updated ?? null,
-        assignees: (raw.assignees ?? []).map((a) => a.username ?? a.email)
-      })
-    }
+    raws.push(...r.tasks)
     if (r.last_page || r.tasks.length === 0) break
   }
-  return out
+
+  // subtasks name their parent; look up the ones we can't see, a few per fetch
+  const known = new Map(raws.map((r) => [r.id, r.name]))
+  let lookups = 15
+  for (const raw of raws) {
+    const p = raw.parent
+    if (!p || known.has(p) || parentNames.has(p) || lookups <= 0) continue
+    lookups--
+    try {
+      const parent = await req<{ name: string }>(`/task/${p}`)
+      parentNames.set(p, parent.name)
+    } catch {
+      // deleted or inaccessible parent: leave it unnamed
+    }
+  }
+
+  const tasks: ClickupTask[] = []
+  const assigneeIds = new Map<string, number[]>()
+  for (const raw of raws) {
+    // a done-type status (e.g. "Complete") is finished work even though
+    // ClickUp doesn't count it as closed — without this, tasks marked done
+    // linger in the open list and reappear in the changelog as "new"
+    if (raw.status.type === 'done' || raw.status.type === 'closed') continue
+    const desc = raw.text_content?.trim() ?? ''
+    assigneeIds.set(
+      raw.id,
+      (raw.assignees ?? []).map((a) => a.id)
+    )
+    tasks.push({
+      id: raw.id,
+      name: raw.name,
+      parentName: raw.parent ? (known.get(raw.parent) ?? parentNames.get(raw.parent) ?? null) : null,
+      requestor: requestorOf(raw.custom_fields),
+      description: desc
+        ? desc.length > DESCRIPTION_MAX
+          ? `${desc.slice(0, DESCRIPTION_MAX).trimEnd()} …`
+          : desc
+        : null,
+      status: raw.status.status,
+      statusColor: raw.status.color,
+      dueDate: toIsoDate(raw.due_date),
+      url: raw.url,
+      listId: raw.list.id,
+      listName: raw.list.name,
+      folderName: raw.folder && !raw.folder.hidden ? raw.folder.name : null,
+      priority: raw.priority?.priority ?? null,
+      dateUpdated: raw.date_updated ?? null,
+      assignees: (raw.assignees ?? []).map((a) => a.username ?? a.email)
+    })
+  }
+  return { tasks, assigneeIds, userId: user.id, truncated }
+}
+
+export async function fetchClickupTasks(scope: 'mine' | 'all'): Promise<ClickupTask[]> {
+  return (await fetchTasks(scope)).tasks
+}
+
+/** Everyone in the workspace, for reassigning tasks. */
+export async function clickupMembers(): Promise<ClickupMember[]> {
+  const t = await team()
+  return t.members
+    .map((m) => ({ id: m.user.id, name: m.user.username ?? m.user.email, email: m.user.email }))
+    .sort((a, b) => a.name.localeCompare(b.name))
 }
 
 interface RawList {
@@ -182,6 +272,39 @@ export async function clickupLists(): Promise<ClickupList[]> {
   }
   listsCache = { at: Date.now(), lists }
   return lists
+}
+
+interface RawField {
+  id: string
+  name: string
+  type: string
+  type_config?: {
+    options?: { id: string; name: string; color?: string | null; orderindex?: number }[]
+  }
+}
+
+const listFieldsCache = new Map<string, { at: number; fields: ClickupDropdownField[] }>()
+
+/**
+ * Dropdown custom fields available on a list — ClickUp includes the ones
+ * inherited from the folder/space/workspace, so a folder-level "Requestor"
+ * shows up here for every list in that folder. Cached briefly per list.
+ */
+export async function clickupListFields(listId: string): Promise<ClickupDropdownField[]> {
+  const cached = listFieldsCache.get(listId)
+  if (cached && Date.now() - cached.at < 5 * 60_000) return cached.fields
+  const { fields } = await req<{ fields?: RawField[] }>(`/list/${listId}/field`)
+  const dropdowns: ClickupDropdownField[] = (fields ?? [])
+    .filter((f) => f.type === 'drop_down')
+    .map((f) => ({
+      id: f.id,
+      name: f.name,
+      options: [...(f.type_config?.options ?? [])]
+        .sort((a, b) => (a.orderindex ?? 0) - (b.orderindex ?? 0))
+        .map((o) => ({ id: o.id, name: o.name, color: o.color ?? null }))
+    }))
+  listFieldsCache.set(listId, { at: Date.now(), fields: dropdowns })
+  return dropdowns
 }
 
 /** Match an owner name/email from the app to a workspace member. */
@@ -273,13 +396,20 @@ interface RawComment {
 /**
  * Fetch tasks and turn the differences since last refresh into changelog
  * events. The changelog always tracks the user's own tasks; the returned
- * task list follows the requested scope.
+ * task list follows the requested scope. One fetch serves both: in the
+ * everyone scope "mine" is derived from the full set rather than fetched
+ * again.
  */
-export async function refreshClickup(scope: 'mine' | 'all' = 'mine'): Promise<{
-  tasks: ClickupTask[]
-  events: ClickupActivityEvent[]
-}> {
-  const tasks = await fetchClickupTasks('mine')
+export async function refreshClickup(scope: 'mine' | 'all' = 'mine'): Promise<ClickupRefreshResult> {
+  const fetched = await fetchTasks(scope)
+  // a capped everyone fetch can't be trusted to contain all of yours, and a
+  // missing task would be logged as "gone" — fetch yours directly in that case
+  const tasks =
+    scope === 'all'
+      ? fetched.truncated
+        ? (await fetchTasks('mine')).tasks
+        : fetched.tasks.filter((t) => fetched.assigneeIds.get(t.id)?.includes(fetched.userId))
+      : fetched.tasks
   const store = readActivity()
   const prev = store.snapshot
   const firstRun = Object.keys(prev).length === 0
@@ -358,7 +488,98 @@ export async function refreshClickup(scope: 'mine' | 'all' = 'mine'): Promise<{
   store.snapshot = next
   store.events = [...fresh, ...store.events].slice(0, MAX_EVENTS)
   writeActivity(store)
-  return { tasks: scope === 'all' ? await fetchClickupTasks('all') : tasks, events: store.events }
+  return { tasks: fetched.tasks, events: store.events, truncated: fetched.truncated }
+}
+
+/** The newest comments on a task's thread, oldest first. */
+export async function clickupComments(taskId: string, limit = 8): Promise<ClickupComment[]> {
+  const { comments } = await req<{ comments: RawComment[] }>(`/task/${taskId}/comment`)
+  return comments
+    .slice(0, limit)
+    .reverse()
+    .map((c) => ({
+      id: c.id,
+      author: c.user?.username ?? 'Someone',
+      text: (c.comment_text ?? '').trim(),
+      at: new Date(Number(c.date)).toISOString()
+    }))
+}
+
+/** ClickUp's priority ids, as the API wants them on a PUT. */
+const PRIORITY_ID: Record<string, number> = { urgent: 1, high: 2, normal: 3, low: 4 }
+
+export async function setClickupTaskPriority(
+  taskId: string,
+  priority: string | null,
+  taskName: string,
+  url?: string
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const id = priority ? PRIORITY_ID[priority.toLowerCase()] : null
+    if (priority && !id) return { ok: false, error: `Unknown priority "${priority}"` }
+    await req(`/task/${taskId}`, { method: 'PUT', body: JSON.stringify({ priority: id }) })
+    recordLocalEvent(
+      makeEvent(
+        'you',
+        taskName,
+        priority ? `You set the priority to ${priority}` : 'You cleared the priority',
+        url
+      )
+    )
+    return { ok: true }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) }
+  }
+}
+
+export async function renameClickupTask(
+  taskId: string,
+  name: string,
+  url?: string
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const trimmed = name.trim()
+    if (!trimmed) return { ok: false, error: 'A task needs a name' }
+    await req(`/task/${taskId}`, { method: 'PUT', body: JSON.stringify({ name: trimmed }) })
+    recordLocalEvent(makeEvent('you', trimmed, 'You renamed it', url), (snapshot) => {
+      if (snapshot[taskId]) snapshot[taskId].name = trimmed
+    })
+    return { ok: true }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) }
+  }
+}
+
+/**
+ * Hand a task to one person: the named member replaces the current
+ * assignees. An empty name unassigns it.
+ */
+export async function setClickupTaskAssignee(
+  taskId: string,
+  assignee: string,
+  taskName: string,
+  url?: string
+): Promise<{ ok: boolean; assignedTo?: string; error?: string }> {
+  try {
+    const member = assignee.trim() ? await resolveAssignee(assignee) : null
+    if (assignee.trim() && !member) {
+      return { ok: false, error: `No workspace member matches "${assignee.trim()}"` }
+    }
+    const current = await req<{ assignees?: { id: number }[] }>(`/task/${taskId}`)
+    const rem = (current.assignees ?? []).map((a) => a.id).filter((id) => id !== member?.id)
+    const add = member && !(current.assignees ?? []).some((a) => a.id === member.id) ? [member.id] : []
+    await req(`/task/${taskId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ assignees: { add, rem } })
+    })
+    const who = member ? (member.username ?? member.email) : null
+    recordLocalEvent(
+      makeEvent('you', taskName, who ? `You assigned it to ${who}` : 'You unassigned it', url)
+    )
+    return { ok: true, assignedTo: who ?? undefined }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) }
+  }
 }
 
 interface RawStatus {
@@ -493,7 +714,8 @@ export async function pushClickupTask(input: ClickupPushInput): Promise<ClickupP
       name: input.name,
       description: input.description || undefined,
       assignees: assignee ? [assignee.id] : undefined,
-      due_date: input.dueDate ? Date.parse(`${input.dueDate}T12:00:00`) : undefined
+      due_date: input.dueDate ? Date.parse(`${input.dueDate}T12:00:00`) : undefined,
+      custom_fields: input.customFields?.length ? input.customFields : undefined
     }
     const task = await req<{ id: string; url: string }>(`/list/${input.listId}/task`, {
       method: 'POST',

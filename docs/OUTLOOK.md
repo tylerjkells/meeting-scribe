@@ -462,7 +462,7 @@ Ranked by value per unit of work, once mail is reachable by any route:
    merged with meeting action items and the calendar.
 4. **Email ↔ meeting ↔ ClickUp** — the thing nothing else can do, because
    nothing else has all three. "Turn this email into a ClickUp task" is now
-   nearly free (the push dialog is standalone as of the Projects page work).
+   nearly free (the push dialog is standalone as of the ClickUp page work).
    Threads can join a meeting series; person pages gain a mail column.
 5. **Follow-up chasing** — sent mail where you asked something and the
    thread died, alongside the aging action items the digest already tracks.

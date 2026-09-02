@@ -500,7 +500,7 @@ export function TodayView({
             </div>
             {cuDue.length > 6 && (
               <button className="link-btn today-more" onClick={onProjects}>
-                All {cuDue.length} due tasks in Projects
+                All {cuDue.length} due tasks in ClickUp
               </button>
             )}
           </section>

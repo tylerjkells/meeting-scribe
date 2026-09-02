@@ -18,20 +18,24 @@ import { autoUpdater } from 'electron-updater'
 // module resolves a path under it
 import { channel } from './channel'
 import {
-  listMeetings,
-  readMeeting,
-  writeMeeting,
-  deleteMeeting,
-  beginRecording,
   appendPcm,
-  finishRecording,
+  appendRetranscribePcm,
+  beginRecording,
+  beginRetranscribe,
   cancelRecording,
-  stashNotes,
-  readStashedNotes,
+  cancelRetranscribe,
+  deleteMeeting,
   findAudio,
-  meetingsRoot,
+  finishRecording,
+  finishRetranscribe,
+  listMeetings,
   meetingDir,
-  recoverOrphanedRecordings
+  meetingsRoot,
+  readMeeting,
+  readStashedNotes,
+  recoverOrphanedRecordings,
+  stashNotes,
+  writeMeeting
 } from './store'
 import {
   getSettings,
@@ -75,8 +79,11 @@ import {
   toolboxImagesDir
 } from './toolbox'
 import {
+  clickupComments,
+  clickupListFields,
   clickupLists,
   clickupListStatuses,
+  clickupMembers,
   clickupStatus,
   commentClickupTask,
   completeClickupTask,
@@ -84,13 +91,18 @@ import {
   disconnectClickup,
   pushClickupTask,
   refreshClickup,
+  renameClickupTask,
+  setClickupTaskAssignee,
   setClickupTaskDue,
+  setClickupTaskPriority,
   setClickupTaskStatus
 } from './clickup'
 import {
   ensureMailDirs,
   mailStatus,
+  readMailTriage,
   readMailbox,
+  setMailHandled,
   startMailWatch,
   stopMailWatch
 } from './mail'
@@ -505,6 +517,20 @@ function registerIpc(): void {
   ipcMain.handle('meetings:retry', (_e, id: string) => {
     processMeeting(id)
   })
+  // re-transcribe: the renderer streams decoded 16kHz PCM, then the pipeline reruns
+  ipcMain.handle('retrans:begin', (_e, id: string) => beginRetranscribe(id))
+  ipcMain.on('retrans:pcm', (_e, id: string, chunk: ArrayBuffer) => {
+    appendRetranscribePcm(id, Buffer.from(chunk))
+  })
+  ipcMain.handle('retrans:finish', async (_e, id: string) => {
+    const m = await finishRetranscribe(id)
+    if (m) {
+      for (const win of BrowserWindow.getAllWindows()) win.webContents.send('meeting:updated', m)
+      processMeeting(id)
+    }
+    return m
+  })
+  ipcMain.handle('retrans:cancel', (_e, id: string) => cancelRetranscribe(id))
   ipcMain.handle('meetings:resummarize', (_e, id: string, model?: string) => {
     summarizeMeeting(id, model)
   })
@@ -903,6 +929,10 @@ function registerIpc(): void {
   )
   ipcMain.handle('mail:queueDraft', (_e, input: MailDraftInput) => queueMailDraft(input))
   ipcMain.handle('mail:summarize', (_e, messageId: string) => summarizeMailMessage(messageId))
+  ipcMain.handle('mail:triage', () => readMailTriage())
+  ipcMain.handle('mail:setHandled', (_e, messageId: string, handled: boolean) =>
+    setMailHandled(messageId, handled)
+  )
 
   // --- daily recap ---
   ipcMain.handle('recap:build', () => todaysBrief())
@@ -917,6 +947,22 @@ function registerIpc(): void {
   })
   ipcMain.handle('clickup:refresh', (_e, scope: 'mine' | 'all' = 'mine') => refreshClickup(scope))
   ipcMain.handle('clickup:lists', () => clickupLists())
+  ipcMain.handle('clickup:listFields', (_e, listId: string) => clickupListFields(listId))
+  ipcMain.handle('clickup:members', () => clickupMembers())
+  ipcMain.handle('clickup:comments', (_e, taskId: string) => clickupComments(taskId))
+  ipcMain.handle(
+    'clickup:setPriority',
+    (_e, taskId: string, priority: string | null, name: string, url?: string) =>
+      setClickupTaskPriority(taskId, priority, name, url)
+  )
+  ipcMain.handle('clickup:rename', (_e, taskId: string, name: string, url?: string) =>
+    renameClickupTask(taskId, name, url)
+  )
+  ipcMain.handle(
+    'clickup:setAssignee',
+    (_e, taskId: string, assignee: string, name: string, url?: string) =>
+      setClickupTaskAssignee(taskId, assignee, name, url)
+  )
   ipcMain.handle('clickup:push', (_e, input: ClickupPushInput) => pushClickupTask(input))
   ipcMain.handle(
     'clickup:complete',

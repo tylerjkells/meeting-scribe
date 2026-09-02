@@ -9,7 +9,11 @@ import type {
   BulkSelection,
   CalendarEvent,
   ClickupActivityEvent,
+  ClickupComment,
+  ClickupDropdownField,
   ClickupList,
+  ClickupMember,
+  ClickupRefreshResult,
   ClickupPushInput,
   ClickupPushResult,
   ClickupStatus,
@@ -28,6 +32,7 @@ import type {
   MailDraftResult,
   MailMessage,
   MailStatus,
+  MailTriage,
   PrepEntry,
   Meeting,
   MeetingListItem,
@@ -119,6 +124,12 @@ const api = {
       ipcRenderer.invoke('meetings:rename', id, title),
     delete: (id: string): Promise<void> => ipcRenderer.invoke('meetings:delete', id),
     retry: (id: string): Promise<void> => ipcRenderer.invoke('meetings:retry', id),
+    retranscribeBegin: (id: string): Promise<boolean> => ipcRenderer.invoke('retrans:begin', id),
+    retranscribePcm: (id: string, chunk: ArrayBuffer): void =>
+      ipcRenderer.send('retrans:pcm', id, chunk),
+    retranscribeFinish: (id: string): Promise<Meeting | null> =>
+      ipcRenderer.invoke('retrans:finish', id),
+    retranscribeCancel: (id: string): Promise<void> => ipcRenderer.invoke('retrans:cancel', id),
     resummarize: (id: string, model?: string): Promise<void> =>
       ipcRenderer.invoke('meetings:resummarize', id, model),
     exportMarkdown: (defaultName: string, content: string): Promise<string | null> =>
@@ -290,6 +301,9 @@ const api = {
     draftReply: (messageId: string, instruction?: string): Promise<MailDraftResult> =>
       ipcRenderer.invoke('mail:draftReply', messageId, instruction),
     /** a short read on one message */
+    triage: (): Promise<MailTriage> => ipcRenderer.invoke('mail:triage'),
+    setHandled: (messageId: string, handled: boolean): Promise<MailTriage> =>
+      ipcRenderer.invoke('mail:setHandled', messageId, handled),
     summarize: (messageId: string): Promise<MailDraftResult> =>
       ipcRenderer.invoke('mail:summarize', messageId),
     /** file the draft for the outbound flow to turn into an Outlook draft */
@@ -321,9 +335,29 @@ const api = {
     disconnect: (): Promise<AppSettings> => ipcRenderer.invoke('clickup:disconnect'),
     refresh: (
       scope: 'mine' | 'all'
-    ): Promise<{ tasks: ClickupTask[]; events: ClickupActivityEvent[] }> =>
-      ipcRenderer.invoke('clickup:refresh', scope),
+    ): Promise<ClickupRefreshResult> => ipcRenderer.invoke('clickup:refresh', scope),
     lists: (): Promise<ClickupList[]> => ipcRenderer.invoke('clickup:lists'),
+    listFields: (listId: string): Promise<ClickupDropdownField[]> =>
+      ipcRenderer.invoke('clickup:listFields', listId),
+    members: (): Promise<ClickupMember[]> => ipcRenderer.invoke('clickup:members'),
+    comments: (taskId: string): Promise<ClickupComment[]> =>
+      ipcRenderer.invoke('clickup:comments', taskId),
+    setPriority: (
+      taskId: string,
+      priority: string | null,
+      name: string,
+      url?: string
+    ): Promise<{ ok: boolean; error?: string }> =>
+      ipcRenderer.invoke('clickup:setPriority', taskId, priority, name, url),
+    rename: (taskId: string, name: string, url?: string): Promise<{ ok: boolean; error?: string }> =>
+      ipcRenderer.invoke('clickup:rename', taskId, name, url),
+    setAssignee: (
+      taskId: string,
+      assignee: string,
+      name: string,
+      url?: string
+    ): Promise<{ ok: boolean; assignedTo?: string; error?: string }> =>
+      ipcRenderer.invoke('clickup:setAssignee', taskId, assignee, name, url),
     push: (input: ClickupPushInput): Promise<ClickupPushResult> =>
       ipcRenderer.invoke('clickup:push', input),
     complete: (

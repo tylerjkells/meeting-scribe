@@ -22,6 +22,9 @@ function update(meeting: Meeting, patch: Partial<Meeting>): Meeting {
 
 const inFlight = new Set<string>()
 
+export const NO_SPEECH =
+  'No speech was found in the recording. If people were talking, the microphone may have been muted or the wrong device was selected. Check the Windows sound settings, then try again or re-transcribe from the audio.'
+
 /** Run transcription (and summarization if enabled) for a recorded meeting. */
 export async function processMeeting(id: string): Promise<void> {
   if (inFlight.has(id)) return
@@ -52,6 +55,11 @@ export async function processMeeting(id: string): Promise<void> {
           },
           vocabularyPrompt(settings.vocabulary) || undefined
         )
+        if (transcript.length === 0) {
+          // keep the wav so "Try again" (or a different model) has something to work with
+          update(meeting, { stage: 'error', progress: undefined, error: NO_SPEECH })
+          return
+        }
         labelSpeakers(id, transcript)
         meeting = update(meeting, { transcript, progress: undefined })
         rmSync(wav, { force: true })

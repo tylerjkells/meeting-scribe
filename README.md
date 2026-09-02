@@ -1,7 +1,7 @@
 # Rowan AIO
 
 The all-in-one work hub: meeting capture and memory, an org directory with an
-org chart, ClickUp-connected projects, an org link hub, the brand guide, and a
+org chart, a ClickUp companion, an org link hub, the brand guide, and a
 toolbox of guides, images, and templates — local-first, private, no
 subscription. (Formerly MeetingScribe; the meeting companion below is now one
 module of several.)
@@ -12,11 +12,19 @@ module of several.)
   reporting lines, browsable as an Outlook-style org chart. Load the whole org
   from a CSV export in one import; every person is auto-enriched with their
   meeting history, what they own, and what you owe them.
-- **Projects** — a ClickUp companion (personal API token, stored encrypted):
-  every open task assigned to you grouped by due date or project, complete /
-  re-date / comment in place, a Mine/Everyone scope, and an Activity changelog
-  built by diffing refreshes. Meeting action items push to real ClickUp tasks
-  with assignee and due date mapped.
+- **ClickUp** — a ClickUp companion (personal API token, stored encrypted):
+  every open task assigned to you grouped by due date or project, search,
+  complete / re-date / re-prioritize / reassign / rename / comment in place
+  with the task's recent comments shown, a Mine/Everyone scope, quiet
+  auto-refresh, and an Activity changelog built by diffing refreshes with an
+  unread badge. Meeting action items and emails push to real ClickUp tasks
+  with assignee, due date, and the list's Requestor field mapped.
+- **Mail** — an inbox mirror fed by a Power Automate flow into a synced
+  OneDrive folder (no mailbox credentials): threads grouped by conversation,
+  automated mail and handled mail tucked away behind toggles, full-text
+  search, AI summaries and drafted replies that land in Outlook Drafts, one
+  click to a ClickUp task or a colleague's People page, and a warning when
+  the flow goes quiet.
 - **Links** — the org link hub, grouped by category with pinned favorites that
   also appear on Today; compact list or thumbnail cards (upload a screenshot
   or auto-capture the page).

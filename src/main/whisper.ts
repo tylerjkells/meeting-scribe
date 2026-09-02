@@ -241,8 +241,13 @@ const HALLUCINATED_PHRASES =
   /\b(subs? by|subtitles? (by|made)|amara\.org|zeoranger|thanks? (you )?(all )?for watching|please subscribe|like and subscribe|mooji)\b/i
 const FILLER_ONLY = /^[\s.!?,'-]*(uh|um|oh|ah|hm+|mm+(-?hmm?)?|huh)?[\s.!?,'-]*$/i
 
+// Whisper marks stretches with no speech as "[BLANK_AUDIO]", and tags sounds
+// as "[Music]", "(silence)", "[inaudible]" and so on. A segment that is
+// nothing but a bracketed tag never contains a spoken word.
+const MARKER_ONLY = /^[\s.!?,'-]*[[(][^\])]*[\])][\s.!?,'-]*$/
+
 function isHallucination(text: string): boolean {
-  return HALLUCINATED_PHRASES.test(text) || FILLER_ONLY.test(text)
+  return HALLUCINATED_PHRASES.test(text) || FILLER_ONLY.test(text) || MARKER_ONLY.test(text)
 }
 
 export async function transcribe(

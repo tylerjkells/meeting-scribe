@@ -382,6 +382,59 @@ function dateFromId(id: string): string | null {
   return `${m[1]}T${m[2]}:${m[3]}:${m[4]}.${m[5]}Z`
 }
 
+// ---------------------------------------------------------------------------
+// Re-transcription: the renderer decodes the saved audio back to 16kHz PCM
+// (the main process has no decoder) and streams it here, then the normal
+// pipeline runs on the rebuilt whisper-input.wav.
+// ---------------------------------------------------------------------------
+
+const retrans = new Map<string, { stream: WriteStream; bytes: number }>()
+
+export function beginRetranscribe(id: string): boolean {
+  const meeting = readMeeting(id)
+  if (!meeting || sessions.has(id) || retrans.has(id)) return false
+  const stream = createWriteStream(join(meetingDir(id), 'retrans.pcm'))
+  retrans.set(id, { stream, bytes: 0 })
+  return true
+}
+
+export function appendRetranscribePcm(id: string, chunk: Buffer): void {
+  const r = retrans.get(id)
+  if (!r) return
+  r.stream.write(chunk)
+  r.bytes += chunk.length
+}
+
+/** Seal the PCM into the whisper wav and clear the old transcript; the caller runs the pipeline. */
+export async function finishRetranscribe(id: string): Promise<Meeting | null> {
+  const r = retrans.get(id)
+  if (!r) return null
+  retrans.delete(id)
+  await new Promise<void>((resolve, reject) =>
+    r.stream.end((err: NodeJS.ErrnoException | null | undefined) => (err ? reject(err) : resolve()))
+  )
+  const rawPath = join(meetingDir(id), 'retrans.pcm')
+  if (r.bytes < 32000) {
+    rmSync(rawPath, { force: true })
+    throw new Error('The decoded audio was under a second long; nothing to transcribe.')
+  }
+  await pcmToWav(rawPath, wavPath(id), r.bytes)
+  rmSync(rawPath, { force: true })
+  const meeting = readMeeting(id)
+  if (!meeting) return null
+  const next: Meeting = { ...meeting, transcript: undefined, stage: 'recorded', progress: undefined, error: undefined }
+  writeMeeting(next)
+  return next
+}
+
+export function cancelRetranscribe(id: string): void {
+  const r = retrans.get(id)
+  if (!r) return
+  r.stream.destroy()
+  retrans.delete(id)
+  rmSync(join(meetingDir(id), 'retrans.pcm'), { force: true })
+}
+
 export function cancelRecording(id: string): void {
   const s = sessions.get(id)
   if (s) {
