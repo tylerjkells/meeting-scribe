@@ -36,16 +36,17 @@ function formatAgo(iso: string): string {
 /** a thread: every message sharing a conversation, newest first */
 type Thread = { key: string; latest: MailMessage; messages: MailMessage[]; unread: number }
 
-function toThreads(messages: MailMessage[]): Thread[] {
+function toThreads(messages: MailMessage[], isUnread: (m: MailMessage) => boolean): Thread[] {
   const map = new Map<string, Thread>()
   for (const m of messages) {
     const key = m.conversationId || m.id
     const t = map.get(key)
+    const unread = isUnread(m) ? 1 : 0
     if (t) {
       t.messages.push(m)
-      if (!m.isRead) t.unread++
+      t.unread += unread
     } else {
-      map.set(key, { key, latest: m, messages: [m], unread: m.isRead ? 0 : 1 })
+      map.set(key, { key, latest: m, messages: [m], unread })
     }
   }
   return [...map.values()]
@@ -135,7 +136,7 @@ export function MailView({
 }): React.JSX.Element {
   const [status, setStatus] = useState<MailStatus | null>(null)
   const [messages, setMessages] = useState<MailMessage[]>([])
-  const [triage, setTriage] = useState<MailTriage>({ handled: {} })
+  const [triage, setTriage] = useState<MailTriage>({ handled: {}, read: {} })
   const [people, setPeople] = useState<Set<string>>(() => new Set())
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
@@ -194,7 +195,7 @@ export function MailView({
     if (ids.length === 0) return
     // optimistic: the file write is local and quick
     setTriage((prev) => {
-      const next = { handled: { ...prev.handled } }
+      const next = { ...prev, handled: { ...prev.handled } }
       const now = new Date().toISOString()
       for (const id of ids) {
         if (handled) next.handled[id] = now
@@ -214,6 +215,34 @@ export function MailView({
     } catch {
       setRowError('Could not save that')
     }
+  }
+
+  /** Rowan's own read mark wins over Outlook's stale one-way flag */
+  const isUnread = (m: MailMessage): boolean => {
+    const local = triage.read[m.id]
+    return local === undefined ? !m.isRead : !local
+  }
+
+  async function setThreadRead(thread: Thread, read: boolean): Promise<void> {
+    const ids = thread.messages.map((x) => x.id)
+    if (ids.every((id) => triage.read[id] === read)) return
+    setTriage((prev) => {
+      const next = { ...prev, read: { ...prev.read } }
+      for (const id of ids) next.read[id] = read
+      return next
+    })
+    try {
+      setTriage(await window.scribe.mail.setRead(ids, read))
+    } catch {
+      // a lost read mark is cosmetic; say nothing
+    }
+  }
+
+  /** opening a thread is reading it, the way any mail client treats it */
+  function openThread(thread: Thread): void {
+    const expanded = expandedId === thread.latest.id
+    setExpandedId(expanded ? null : thread.latest.id)
+    if (!expanded && thread.unread > 0) setThreadRead(thread, true)
   }
 
   function toggleSelected(key: string): void {
@@ -240,7 +269,7 @@ export function MailView({
     let unread = 0
     const kept: MailMessage[] = []
     for (const m of messages) {
-      if (!m.isRead && !isHandled(m)) unread++
+      if (isUnread(m) && !isHandled(m)) unread++
       if (needle) {
         const hay = [m.subject, m.fromName ?? '', m.from, m.preview, m.body, ...m.to, ...m.cc]
           .join(' ')
@@ -257,7 +286,7 @@ export function MailView({
       }
       kept.push(m)
     }
-    return { threads: toThreads(kept), hiddenAutomated, hiddenHandled, unread }
+    return { threads: toThreads(kept, isUnread), hiddenAutomated, hiddenHandled, unread }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages, needle, showAutomated, showHandled, triage])
 
@@ -384,6 +413,16 @@ export function MailView({
           >
             {handled ? 'Handled ✓ · Undo' : 'Mark handled'}
           </button>
+          <button
+            className="btn btn-ghost"
+            onClick={() => {
+              setThreadRead(thread, false)
+              setExpandedId(null)
+            }}
+            title="Show it as new again in Rowan; Outlook is not changed"
+          >
+            Mark unread
+          </button>
           {m.webLink && (
             <a className="cu-pushed" href={m.webLink} target="_blank" rel="noreferrer">
               Open in Outlook ↗
@@ -421,7 +460,7 @@ export function MailView({
             aria-label={`Select "${m.subject}"`}
             title="Select for a bulk action"
           />
-          <button className="mail-main" onClick={() => setExpandedId(expanded ? null : m.id)}>
+          <button className="mail-main" onClick={() => openThread(thread)}>
             <span className="mail-from">{m.fromName ?? m.from}</span>
             <span className="mail-subject">
               {m.external && (

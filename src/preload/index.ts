@@ -304,6 +304,8 @@ const api = {
     triage: (): Promise<MailTriage> => ipcRenderer.invoke('mail:triage'),
     setHandled: (messageIds: string[], handled: boolean): Promise<MailTriage> =>
       ipcRenderer.invoke('mail:setHandled', messageIds, handled),
+    setRead: (messageIds: string[], read: boolean): Promise<MailTriage> =>
+      ipcRenderer.invoke('mail:setRead', messageIds, read),
     summarize: (messageId: string): Promise<MailDraftResult> =>
       ipcRenderer.invoke('mail:summarize', messageId),
     /** file the draft for the outbound flow to turn into an Outlook draft */

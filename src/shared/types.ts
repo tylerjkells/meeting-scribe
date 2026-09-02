@@ -606,6 +606,11 @@ export interface MailMessage {
  */
 export interface MailTriage {
   handled: Record<string, string>
+  /**
+   * Rowan's own read state, layered over Outlook's one-way flag: true once a
+   * message was opened here, false when explicitly marked unread again.
+   */
+  read: Record<string, boolean>
 }
 
 export interface MailStatus {

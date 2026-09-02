@@ -103,6 +103,7 @@ import {
   readMailTriage,
   readMailbox,
   setMailHandled,
+  setMailRead,
   startMailWatch,
   stopMailWatch
 } from './mail'
@@ -932,6 +933,9 @@ function registerIpc(): void {
   ipcMain.handle('mail:triage', () => readMailTriage())
   ipcMain.handle('mail:setHandled', (_e, messageIds: string[], handled: boolean) =>
     setMailHandled(messageIds, handled)
+  )
+  ipcMain.handle('mail:setRead', (_e, messageIds: string[], read: boolean) =>
+    setMailRead(messageIds, read)
   )
 
   // --- daily recap ---

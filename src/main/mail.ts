@@ -306,10 +306,27 @@ function triageFile(): string {
 export function readMailTriage(): MailTriage {
   try {
     const raw = JSON.parse(readFileSync(triageFile(), 'utf8')) as Partial<MailTriage>
-    return { handled: raw.handled && typeof raw.handled === 'object' ? raw.handled : {} }
+    return {
+      handled: raw.handled && typeof raw.handled === 'object' ? raw.handled : {},
+      read: raw.read && typeof raw.read === 'object' ? raw.read : {}
+    }
   } catch {
-    return { handled: {} }
+    return { handled: {}, read: {} }
   }
+}
+
+/** Write the triage file, dropping entries for mail that has left the folder. */
+function writeMailTriage(triage: MailTriage, keep: Set<string>): MailTriage {
+  const live = new Set(readMailbox().map((m) => m.id))
+  for (const id of Object.keys(triage.handled)) {
+    if (!live.has(id) && !keep.has(id)) delete triage.handled[id]
+  }
+  for (const id of Object.keys(triage.read)) {
+    if (!live.has(id) && !keep.has(id)) delete triage.read[id]
+  }
+  mkdirSync(app.getPath('userData'), { recursive: true })
+  writeFileSync(triageFile(), JSON.stringify(triage, null, 2))
+  return triage
 }
 
 export function setMailHandled(messageIds: string[], handled: boolean): MailTriage {
@@ -320,14 +337,14 @@ export function setMailHandled(messageIds: string[], handled: boolean): MailTria
     if (handled) triage.handled[id] = now
     else delete triage.handled[id]
   }
-  // forget ids that are no longer in the folder, so the file doesn't grow forever
-  const live = new Set(readMailbox().map((m) => m.id))
-  for (const id of Object.keys(triage.handled)) {
-    if (!live.has(id) && !ids.has(id)) delete triage.handled[id]
-  }
-  mkdirSync(app.getPath('userData'), { recursive: true })
-  writeFileSync(triageFile(), JSON.stringify(triage, null, 2))
-  return triage
+  return writeMailTriage(triage, ids)
+}
+
+export function setMailRead(messageIds: string[], read: boolean): MailTriage {
+  const triage = readMailTriage()
+  const ids = new Set(messageIds)
+  for (const id of ids) triage.read[id] = read
+  return writeMailTriage(triage, ids)
 }
 
 /** Make sure the outbound folder exists, ready for reply drafts. */
