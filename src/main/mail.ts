@@ -312,14 +312,18 @@ export function readMailTriage(): MailTriage {
   }
 }
 
-export function setMailHandled(messageId: string, handled: boolean): MailTriage {
+export function setMailHandled(messageIds: string[], handled: boolean): MailTriage {
   const triage = readMailTriage()
-  if (handled) triage.handled[messageId] = new Date().toISOString()
-  else delete triage.handled[messageId]
+  const now = new Date().toISOString()
+  const ids = new Set(messageIds)
+  for (const id of ids) {
+    if (handled) triage.handled[id] = now
+    else delete triage.handled[id]
+  }
   // forget ids that are no longer in the folder, so the file doesn't grow forever
   const live = new Set(readMailbox().map((m) => m.id))
   for (const id of Object.keys(triage.handled)) {
-    if (!live.has(id) && id !== messageId) delete triage.handled[id]
+    if (!live.has(id) && !ids.has(id)) delete triage.handled[id]
   }
   mkdirSync(app.getPath('userData'), { recursive: true })
   writeFileSync(triageFile(), JSON.stringify(triage, null, 2))

@@ -21,7 +21,8 @@ module of several.)
   with assignee, due date, and the list's Requestor field mapped.
 - **Mail** — an inbox mirror fed by a Power Automate flow into a synced
   OneDrive folder (no mailbox credentials): threads grouped by conversation,
-  automated mail and handled mail tucked away behind toggles, full-text
+  automated mail and handled mail tucked away behind toggles (mark handled one
+  at a time, by selection, or a whole day at once), full-text
   search, AI summaries and drafted replies that land in Outlook Drafts, one
   click to a ClickUp task or a colleague's People page, and a warning when
   the flow goes quiet.

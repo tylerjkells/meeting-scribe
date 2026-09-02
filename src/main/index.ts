@@ -930,8 +930,8 @@ function registerIpc(): void {
   ipcMain.handle('mail:queueDraft', (_e, input: MailDraftInput) => queueMailDraft(input))
   ipcMain.handle('mail:summarize', (_e, messageId: string) => summarizeMailMessage(messageId))
   ipcMain.handle('mail:triage', () => readMailTriage())
-  ipcMain.handle('mail:setHandled', (_e, messageId: string, handled: boolean) =>
-    setMailHandled(messageId, handled)
+  ipcMain.handle('mail:setHandled', (_e, messageIds: string[], handled: boolean) =>
+    setMailHandled(messageIds, handled)
   )
 
   // --- daily recap ---
