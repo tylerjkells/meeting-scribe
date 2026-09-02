@@ -302,8 +302,10 @@ const api = {
       ipcRenderer.invoke('mail:draftReply', messageId, instruction),
     /** a short read on one message */
     triage: (): Promise<MailTriage> => ipcRenderer.invoke('mail:triage'),
-    setHandled: (messageId: string, handled: boolean): Promise<MailTriage> =>
-      ipcRenderer.invoke('mail:setHandled', messageId, handled),
+    setHandled: (messageIds: string[], handled: boolean): Promise<MailTriage> =>
+      ipcRenderer.invoke('mail:setHandled', messageIds, handled),
+    setRead: (messageIds: string[], read: boolean): Promise<MailTriage> =>
+      ipcRenderer.invoke('mail:setRead', messageIds, read),
     summarize: (messageId: string): Promise<MailDraftResult> =>
       ipcRenderer.invoke('mail:summarize', messageId),
     /** file the draft for the outbound flow to turn into an Outlook draft */
@@ -394,6 +396,11 @@ const api = {
   },
   actions: {
     list: (): Promise<ActionRollupItem[]> => ipcRenderer.invoke('actions:list'),
+    setState: (
+      meetingId: string,
+      index: number,
+      patch: { dismissed?: boolean; snoozedUntil?: string | null }
+    ): Promise<Meeting | null> => ipcRenderer.invoke('actions:setState', meetingId, index, patch),
     toggle: (meetingId: string, index: number): Promise<boolean> =>
       ipcRenderer.invoke('actions:toggle', meetingId, index),
     setOwner: (meetingId: string, index: number, owner: string | null): Promise<Meeting | null> =>

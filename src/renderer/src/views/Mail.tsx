@@ -36,16 +36,17 @@ function formatAgo(iso: string): string {
 /** a thread: every message sharing a conversation, newest first */
 type Thread = { key: string; latest: MailMessage; messages: MailMessage[]; unread: number }
 
-function toThreads(messages: MailMessage[]): Thread[] {
+function toThreads(messages: MailMessage[], isUnread: (m: MailMessage) => boolean): Thread[] {
   const map = new Map<string, Thread>()
   for (const m of messages) {
     const key = m.conversationId || m.id
     const t = map.get(key)
+    const unread = isUnread(m) ? 1 : 0
     if (t) {
       t.messages.push(m)
-      if (!m.isRead) t.unread++
+      t.unread += unread
     } else {
-      map.set(key, { key, latest: m, messages: [m], unread: m.isRead ? 0 : 1 })
+      map.set(key, { key, latest: m, messages: [m], unread })
     }
   }
   return [...map.values()]
@@ -135,7 +136,7 @@ export function MailView({
 }): React.JSX.Element {
   const [status, setStatus] = useState<MailStatus | null>(null)
   const [messages, setMessages] = useState<MailMessage[]>([])
-  const [triage, setTriage] = useState<MailTriage>({ handled: {} })
+  const [triage, setTriage] = useState<MailTriage>({ handled: {}, read: {} })
   const [people, setPeople] = useState<Set<string>>(() => new Set())
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
@@ -152,6 +153,8 @@ export function MailView({
   const [showHandled, setShowHandled] = useState(
     () => localStorage.getItem('mailShowHandled') === '1'
   )
+  /** thread keys ticked for a bulk action */
+  const [selected, setSelected] = useState<Set<string>>(() => new Set())
   const searchRef = useRef<HTMLInputElement>(null)
 
   /** quiet loads (the folder watcher) don't flip the Refresh button */
@@ -186,20 +189,69 @@ export function MailView({
     else setRowError(result.error ?? 'Could not summarize that message')
   }
 
-  async function setHandled(m: MailMessage, handled: boolean): Promise<void> {
+  /** mark whole threads: every message in each, so an older reply can't resurface as a row */
+  async function setThreadsHandled(threads: Thread[], handled: boolean): Promise<void> {
+    const ids = threads.flatMap((t) => t.messages.map((x) => x.id))
+    if (ids.length === 0) return
     // optimistic: the file write is local and quick
     setTriage((prev) => {
-      const next = { handled: { ...prev.handled } }
-      if (handled) next.handled[m.id] = new Date().toISOString()
-      else delete next.handled[m.id]
+      const next = { ...prev, handled: { ...prev.handled } }
+      const now = new Date().toISOString()
+      for (const id of ids) {
+        if (handled) next.handled[id] = now
+        else delete next.handled[id]
+      }
       return next
     })
-    if (handled && expandedId === m.id && !showHandled) setExpandedId(null)
+    if (handled && !showHandled && expandedId && ids.includes(expandedId)) setExpandedId(null)
+    setSelected((prev) => {
+      if (prev.size === 0) return prev
+      const next = new Set(prev)
+      for (const t of threads) next.delete(t.key)
+      return next
+    })
     try {
-      setTriage(await window.scribe.mail.setHandled(m.id, handled))
+      setTriage(await window.scribe.mail.setHandled(ids, handled))
     } catch {
       setRowError('Could not save that')
     }
+  }
+
+  /** Rowan's own read mark wins over Outlook's stale one-way flag */
+  const isUnread = (m: MailMessage): boolean => {
+    const local = triage.read[m.id]
+    return local === undefined ? !m.isRead : !local
+  }
+
+  async function setThreadRead(thread: Thread, read: boolean): Promise<void> {
+    const ids = thread.messages.map((x) => x.id)
+    if (ids.every((id) => triage.read[id] === read)) return
+    setTriage((prev) => {
+      const next = { ...prev, read: { ...prev.read } }
+      for (const id of ids) next.read[id] = read
+      return next
+    })
+    try {
+      setTriage(await window.scribe.mail.setRead(ids, read))
+    } catch {
+      // a lost read mark is cosmetic; say nothing
+    }
+  }
+
+  /** opening a thread is reading it, the way any mail client treats it */
+  function openThread(thread: Thread): void {
+    const expanded = expandedId === thread.latest.id
+    setExpandedId(expanded ? null : thread.latest.id)
+    if (!expanded && thread.unread > 0) setThreadRead(thread, true)
+  }
+
+  function toggleSelected(key: string): void {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
   }
 
   function toggleToggle(key: 'mailShowAutomated' | 'mailShowHandled', on: boolean): void {
@@ -217,7 +269,7 @@ export function MailView({
     let unread = 0
     const kept: MailMessage[] = []
     for (const m of messages) {
-      if (!m.isRead && !isHandled(m)) unread++
+      if (isUnread(m) && !isHandled(m)) unread++
       if (needle) {
         const hay = [m.subject, m.fromName ?? '', m.from, m.preview, m.body, ...m.to, ...m.cc]
           .join(' ')
@@ -234,7 +286,7 @@ export function MailView({
       }
       kept.push(m)
     }
-    return { threads: toThreads(kept), hiddenAutomated, hiddenHandled, unread }
+    return { threads: toThreads(kept, isUnread), hiddenAutomated, hiddenHandled, unread }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages, needle, showAutomated, showHandled, triage])
 
@@ -354,12 +406,22 @@ export function MailView({
           </button>
           <button
             className={`btn ${handled ? '' : 'btn-ghost'}`}
-            onClick={() => setHandled(m, !handled)}
+            onClick={() => setThreadsHandled([thread], !handled)}
             title={
               handled ? 'Put it back in the list' : 'Hide it from the list; nothing changes in Outlook'
             }
           >
             {handled ? 'Handled ✓ · Undo' : 'Mark handled'}
+          </button>
+          <button
+            className="btn btn-ghost"
+            onClick={() => {
+              setThreadRead(thread, false)
+              setExpandedId(null)
+            }}
+            title="Show it as new again in Rowan; Outlook is not changed"
+          >
+            Mark unread
           </button>
           {m.webLink && (
             <a className="cu-pushed" href={m.webLink} target="_blank" rel="noreferrer">
@@ -376,9 +438,11 @@ export function MailView({
     const m = thread.latest
     const expanded = expandedId === m.id
     const handled = isHandled(m)
+    const isSelected = selected.has(thread.key)
     const classes = [
       'mail-item',
       expanded ? 'expanded' : '',
+      isSelected ? 'selected' : '',
       thread.unread > 0 && !handled ? 'unread' : '',
       m.automated ? 'automated' : '',
       handled ? 'handled' : ''
@@ -388,7 +452,15 @@ export function MailView({
     return (
       <div key={thread.key} className={classes}>
         <div className="mail-row">
-          <button className="mail-main" onClick={() => setExpandedId(expanded ? null : m.id)}>
+          <input
+            type="checkbox"
+            className="rollup-check mail-select"
+            checked={isSelected}
+            onChange={() => toggleSelected(thread.key)}
+            aria-label={`Select "${m.subject}"`}
+            title="Select for a bulk action"
+          />
+          <button className="mail-main" onClick={() => openThread(thread)}>
             <span className="mail-from">{m.fromName ?? m.from}</span>
             <span className="mail-subject">
               {m.external && (
@@ -420,7 +492,7 @@ export function MailView({
             <span className="mail-when">{formatWhen(m.receivedAt)}</span>
             <button
               className={`mail-done ${handled ? 'on' : ''}`}
-              onClick={() => setHandled(m, !handled)}
+              onClick={() => setThreadsHandled([thread], !handled)}
               title={handled ? 'Handled · click to undo' : 'Mark handled'}
               aria-label={handled ? 'Unmark handled' : 'Mark handled'}
             >
@@ -434,6 +506,7 @@ export function MailView({
   }
 
   const groups = byDay(threads)
+  const selectedThreads = threads.filter((t) => selected.has(t.key))
 
   return (
     <>
@@ -516,14 +589,58 @@ export function MailView({
               : 'Nothing to show.'}
         </p>
       )}
-      {groups.map((g) => (
-        <section className="section" key={g.label}>
-          <span className="card-subhead">
-            {g.label} · {g.threads.length}
+      {selectedThreads.length > 0 && (
+        <div className="mail-bulk" role="toolbar" aria-label="Selected messages">
+          <span className="mail-bulk-count">
+            {selectedThreads.length} selected
           </span>
-          <div className="mail-list">{g.threads.map(row)}</div>
-        </section>
-      ))}
+          {selectedThreads.some((t) => !isHandled(t.latest)) && (
+            <button
+              className="btn btn-primary"
+              onClick={() => setThreadsHandled(selectedThreads, true)}
+            >
+              Mark handled
+            </button>
+          )}
+          {selectedThreads.some((t) => isHandled(t.latest)) && (
+            <button className="btn" onClick={() => setThreadsHandled(selectedThreads, false)}>
+              Unmark handled
+            </button>
+          )}
+          <button
+            className="btn btn-ghost"
+            onClick={() => setSelected(new Set(threads.map((t) => t.key)))}
+            disabled={selected.size === threads.length}
+          >
+            Select all shown
+          </button>
+          <button className="btn btn-ghost" onClick={() => setSelected(new Set())}>
+            Clear
+          </button>
+        </div>
+      )}
+      {groups.map((g) => {
+        const open = g.threads.filter((t) => !isHandled(t.latest))
+        return (
+          <section className="section" key={g.label}>
+            <div className="mail-group-head">
+              <span className="card-subhead">
+                {g.label} · {g.threads.length}
+              </span>
+              {open.length > 0 && (
+                <button
+                  className="link-btn mail-group-action"
+                  onClick={() => setThreadsHandled(open, true)}
+                  title={`Mark every message under ${g.label} handled`}
+                >
+                  Mark all {open.length === g.threads.length ? '' : `${open.length} `}handled
+                </button>
+              )}
+            </div>
+            <div className="mail-list">{g.threads.map(row)}</div>
+          </section>
+        )
+      })}
       {replyTo && <MailReplyDialog message={replyTo} onClose={() => setReplyTo(null)} />}
       {taskFrom && (
         <ClickupPushDialog

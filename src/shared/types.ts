@@ -41,6 +41,10 @@ export interface ActionItem {
   dueDate?: string | null
   /** set once the item has been pushed to ClickUp */
   clickupUrl?: string
+  /** user decided it isn't a real task (or isn't theirs); kept apart from done */
+  dismissed?: boolean
+  /** ISO date; the item hides from open lists until then */
+  snoozedUntil?: string | null
 }
 
 /** one Q&A exchange in "ask about this meeting" */
@@ -86,6 +90,9 @@ export interface ActionRollupItem {
   dueEdited?: boolean
   /** canonical owner names after identity resolution ('Me' for the user); empty = unassigned */
   owners: string[]
+  dismissed: boolean
+  snoozedUntil?: string
+  clickupUrl?: string
 }
 
 export interface SummaryTopic {
@@ -606,6 +613,11 @@ export interface MailMessage {
  */
 export interface MailTriage {
   handled: Record<string, string>
+  /**
+   * Rowan's own read state, layered over Outlook's one-way flag: true once a
+   * message was opened here, false when explicitly marked unread again.
+   */
+  read: Record<string, boolean>
 }
 
 export interface MailStatus {

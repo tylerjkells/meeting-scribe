@@ -13,6 +13,7 @@ import { ChevronIcon, formatDuration, formatWhen, isOverdue, MicIcon, StageBadge
 import { ClickupCompleteDialog } from '../ClickupComplete'
 import { PrepBody, PrepDialog } from '../PrepDialog'
 import { MorningBrief } from '../MorningBrief'
+import { isOpenAction } from '../../../shared/actions'
 
 /**
  * The location field on virtual/hybrid events often carries platform
@@ -226,7 +227,7 @@ export function TodayView({
   const myOpenActions = useMemo(
     () =>
       actions
-        .filter((a) => !a.done && a.owners.includes('Me'))
+        .filter((a) => isOpenAction(a) && a.owners.includes('Me'))
         .sort((a, b) => ((a.dueDate ?? '9999') < (b.dueDate ?? '9999') ? -1 : 1)),
     [actions]
   )

@@ -2,6 +2,12 @@ import { useEffect, useState } from 'react'
 
 /** release notes shown once after an update lands (auto-updates are silent) */
 const NOTES: Record<string, string[]> = {
+  '0.25.0': [
+    'Action items got a rethink for when the list runs long. Dated items lead, grouped into Overdue, Today, This week, and Later; everything without a date sits under its meeting, where it makes sense. Items from meetings over two weeks old with no live date fold into a Stale section you can review or dismiss in one go. Every item can now be dismissed (it was never really a task) or snoozed until a day you pick, both kept apart from Done so the done list stays honest. Select several and act on them together, search the list, push any item to ClickUp from here, and the long row of person chips folds the quieter names into a picker.',
+    'Dismissed and snoozed items drop out everywhere at once: Today, the morning brief, the weekly digest, the recap, series pages, and People pages all share one idea of what is open.',
+    'Mark mail handled in bulk. Tick several rows for a bulk Mark handled, or clear a whole day with Mark all handled on its heading. Handled now covers the whole thread, so an older reply cannot pop back up on its own.',
+    'Opening a message marks it read in Rowan, so bold rows and the unread count settle as you go through the inbox. Mark unread reverses it. Outlook is never changed either way.'
+  ],
   '0.24.0': [
     'The Projects tab is now called ClickUp, since that is all it ever was.',
     'Tasks pushed to ClickUp can carry a Requestor. When the list you pick has a Requestor dropdown (the Data Governance lists do), the Send to ClickUp dialog shows it and remembers your last choice. Rows on the ClickUp page show the requestor as a chip.',

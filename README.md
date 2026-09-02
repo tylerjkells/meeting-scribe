@@ -21,10 +21,15 @@ module of several.)
   with assignee, due date, and the list's Requestor field mapped.
 - **Mail** — an inbox mirror fed by a Power Automate flow into a synced
   OneDrive folder (no mailbox credentials): threads grouped by conversation,
-  automated mail and handled mail tucked away behind toggles, full-text
+  automated mail and handled mail tucked away behind toggles (mark handled one
+  at a time, by selection, or a whole day at once), full-text
   search, AI summaries and drafted replies that land in Outlook Drafts, one
   click to a ClickUp task or a colleague's People page, and a warning when
   the flow goes quiet.
+- **Action items** — every follow-up from every meeting in one place: dated
+  items grouped by when, undated ones grouped by meeting, stale ones folded
+  away for a bulk review. Done, dismissed, and snoozed are kept apart; select
+  several to act at once; push any item to ClickUp.
 - **Links** — the org link hub, grouped by category with pinned favorites that
   also appear on Today; compact list or thumbnail cards (upload a screenshot
   or auto-capture the page).

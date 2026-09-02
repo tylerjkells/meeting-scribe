@@ -103,6 +103,7 @@ import {
   readMailTriage,
   readMailbox,
   setMailHandled,
+  setMailRead,
   startMailWatch,
   stopMailWatch
 } from './mail'
@@ -930,8 +931,11 @@ function registerIpc(): void {
   ipcMain.handle('mail:queueDraft', (_e, input: MailDraftInput) => queueMailDraft(input))
   ipcMain.handle('mail:summarize', (_e, messageId: string) => summarizeMailMessage(messageId))
   ipcMain.handle('mail:triage', () => readMailTriage())
-  ipcMain.handle('mail:setHandled', (_e, messageId: string, handled: boolean) =>
-    setMailHandled(messageId, handled)
+  ipcMain.handle('mail:setHandled', (_e, messageIds: string[], handled: boolean) =>
+    setMailHandled(messageIds, handled)
+  )
+  ipcMain.handle('mail:setRead', (_e, messageIds: string[], read: boolean) =>
+    setMailRead(messageIds, read)
   )
 
   // --- daily recap ---
@@ -1010,6 +1014,34 @@ function registerIpc(): void {
     }
     return items
   })
+
+  // dismiss / snooze: triage states that aren't "done"
+  ipcMain.handle(
+    'actions:setState',
+    (
+      _e,
+      meetingId: string,
+      index: number,
+      patch: { dismissed?: boolean; snoozedUntil?: string | null }
+    ) => {
+      const m = readMeeting(meetingId)
+      const item = m?.summary?.actionItems[index]
+      if (!m || !item) return null
+      if (patch.dismissed !== undefined) {
+        if (patch.dismissed) item.dismissed = true
+        else delete item.dismissed
+      }
+      if (patch.snoozedUntil !== undefined) {
+        if (patch.snoozedUntil) item.snoozedUntil = patch.snoozedUntil
+        else delete item.snoozedUntil
+      }
+      writeMeeting(m)
+      for (const win of BrowserWindow.getAllWindows()) {
+        win.webContents.send('meeting:updated', m)
+      }
+      return m
+    }
+  )
 
   ipcMain.handle('actions:toggle', (_e, meetingId: string, index: number): boolean => {
     const m = readMeeting(meetingId)
