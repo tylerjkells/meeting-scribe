@@ -5,6 +5,7 @@ import { randomUUID } from 'crypto'
 import { getClickupToken, setClickupToken } from './settings'
 import type {
   ClickupActivityEvent,
+  ClickupDropdownField,
   ClickupList,
   ClickupStatusOption,
   ClickupPushInput,
@@ -182,6 +183,39 @@ export async function clickupLists(): Promise<ClickupList[]> {
   }
   listsCache = { at: Date.now(), lists }
   return lists
+}
+
+interface RawField {
+  id: string
+  name: string
+  type: string
+  type_config?: {
+    options?: { id: string; name: string; color?: string | null; orderindex?: number }[]
+  }
+}
+
+const listFieldsCache = new Map<string, { at: number; fields: ClickupDropdownField[] }>()
+
+/**
+ * Dropdown custom fields available on a list — ClickUp includes the ones
+ * inherited from the folder/space/workspace, so a folder-level "Requestor"
+ * shows up here for every list in that folder. Cached briefly per list.
+ */
+export async function clickupListFields(listId: string): Promise<ClickupDropdownField[]> {
+  const cached = listFieldsCache.get(listId)
+  if (cached && Date.now() - cached.at < 5 * 60_000) return cached.fields
+  const { fields } = await req<{ fields?: RawField[] }>(`/list/${listId}/field`)
+  const dropdowns: ClickupDropdownField[] = (fields ?? [])
+    .filter((f) => f.type === 'drop_down')
+    .map((f) => ({
+      id: f.id,
+      name: f.name,
+      options: [...(f.type_config?.options ?? [])]
+        .sort((a, b) => (a.orderindex ?? 0) - (b.orderindex ?? 0))
+        .map((o) => ({ id: o.id, name: o.name, color: o.color ?? null }))
+    }))
+  listFieldsCache.set(listId, { at: Date.now(), fields: dropdowns })
+  return dropdowns
 }
 
 /** Match an owner name/email from the app to a workspace member. */
@@ -493,7 +527,8 @@ export async function pushClickupTask(input: ClickupPushInput): Promise<ClickupP
       name: input.name,
       description: input.description || undefined,
       assignees: assignee ? [assignee.id] : undefined,
-      due_date: input.dueDate ? Date.parse(`${input.dueDate}T12:00:00`) : undefined
+      due_date: input.dueDate ? Date.parse(`${input.dueDate}T12:00:00`) : undefined,
+      custom_fields: input.customFields?.length ? input.customFields : undefined
     }
     const task = await req<{ id: string; url: string }>(`/list/${input.listId}/task`, {
       method: 'POST',

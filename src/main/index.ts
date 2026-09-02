@@ -75,6 +75,7 @@ import {
   toolboxImagesDir
 } from './toolbox'
 import {
+  clickupListFields,
   clickupLists,
   clickupListStatuses,
   clickupStatus,
@@ -917,6 +918,7 @@ function registerIpc(): void {
   })
   ipcMain.handle('clickup:refresh', (_e, scope: 'mine' | 'all' = 'mine') => refreshClickup(scope))
   ipcMain.handle('clickup:lists', () => clickupLists())
+  ipcMain.handle('clickup:listFields', (_e, listId: string) => clickupListFields(listId))
   ipcMain.handle('clickup:push', (_e, input: ClickupPushInput) => pushClickupTask(input))
   ipcMain.handle(
     'clickup:complete',

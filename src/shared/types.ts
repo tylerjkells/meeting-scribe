@@ -271,6 +271,13 @@ export interface ClickupStatus {
   error?: string
 }
 
+/** one dropdown custom field a list exposes (own or inherited from its folder/space) */
+export interface ClickupDropdownField {
+  id: string
+  name: string
+  options: { id: string; name: string; color: string | null }[]
+}
+
 export interface ClickupPushInput {
   listId: string
   name: string
@@ -279,6 +286,8 @@ export interface ClickupPushInput {
   assignee?: string
   /** ISO date */
   dueDate?: string | null
+  /** dropdown custom fields to set, e.g. the list's "Requestor" — value is the option id */
+  customFields?: { id: string; value: string }[]
 }
 
 export interface ClickupPushResult {

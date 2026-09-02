@@ -9,6 +9,7 @@ import type {
   BulkSelection,
   CalendarEvent,
   ClickupActivityEvent,
+  ClickupDropdownField,
   ClickupList,
   ClickupPushInput,
   ClickupPushResult,
@@ -324,6 +325,8 @@ const api = {
     ): Promise<{ tasks: ClickupTask[]; events: ClickupActivityEvent[] }> =>
       ipcRenderer.invoke('clickup:refresh', scope),
     lists: (): Promise<ClickupList[]> => ipcRenderer.invoke('clickup:lists'),
+    listFields: (listId: string): Promise<ClickupDropdownField[]> =>
+      ipcRenderer.invoke('clickup:listFields', listId),
     push: (input: ClickupPushInput): Promise<ClickupPushResult> =>
       ipcRenderer.invoke('clickup:push', input),
     complete: (

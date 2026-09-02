@@ -16,7 +16,7 @@ module of several.)
   every open task assigned to you grouped by due date or project, complete /
   re-date / comment in place, a Mine/Everyone scope, and an Activity changelog
   built by diffing refreshes. Meeting action items push to real ClickUp tasks
-  with assignee and due date mapped.
+  with assignee, due date, and the list's Requestor field mapped.
 - **Links** — the org link hub, grouped by category with pinned favorites that
   also appear on Today; compact list or thumbnail cards (upload a screenshot
   or auto-capture the page).
