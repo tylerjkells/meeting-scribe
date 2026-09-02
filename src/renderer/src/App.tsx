@@ -183,7 +183,7 @@ export default function App(): React.JSX.Element {
           className={`nav-btn ${view.name === 'projects' ? 'active' : ''}`}
           onClick={() => setView({ name: 'projects' })}
         >
-          <BoardIcon /> Projects
+          <BoardIcon /> ClickUp
         </button>
         <button
           className={`nav-btn ${view.name === 'mail' ? 'active' : ''}`}

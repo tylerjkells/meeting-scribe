@@ -910,7 +910,7 @@ export function SettingsView({
         <header className="settings-label">
           <h2>ClickUp</h2>
           <p className="hint">
-            Powers the Projects page and “Send to ClickUp” on meeting action items. Uses your
+            Powers the ClickUp page and “Send to ClickUp” on meeting action items. Uses your
             personal API token, stored encrypted on this machine: in ClickUp, click your avatar →
             Settings → Apps → API Token → Generate/Copy.
           </p>

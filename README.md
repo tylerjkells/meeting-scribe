@@ -1,7 +1,7 @@
 # Rowan AIO
 
 The all-in-one work hub: meeting capture and memory, an org directory with an
-org chart, ClickUp-connected projects, an org link hub, the brand guide, and a
+org chart, a ClickUp companion, an org link hub, the brand guide, and a
 toolbox of guides, images, and templates — local-first, private, no
 subscription. (Formerly MeetingScribe; the meeting companion below is now one
 module of several.)
@@ -12,7 +12,7 @@ module of several.)
   reporting lines, browsable as an Outlook-style org chart. Load the whole org
   from a CSV export in one import; every person is auto-enriched with their
   meeting history, what they own, and what you owe them.
-- **Projects** — a ClickUp companion (personal API token, stored encrypted):
+- **ClickUp** — a ClickUp companion (personal API token, stored encrypted):
   every open task assigned to you grouped by due date or project, complete /
   re-date / comment in place, a Mine/Everyone scope, and an Activity changelog
   built by diffing refreshes. Meeting action items push to real ClickUp tasks

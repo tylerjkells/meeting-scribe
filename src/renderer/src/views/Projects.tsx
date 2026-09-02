@@ -171,7 +171,7 @@ export function ProjectsView({ onSettings }: { onSettings: () => void }): React.
   if (!status.connected) {
     return (
       <div className="empty-state">
-        <h2>Projects</h2>
+        <h2>ClickUp</h2>
         <p>
           Connect your ClickUp workspace to see everything assigned to you, check tasks off, and
           push meeting action items into real tasks. ClickUp stays the source of truth.
@@ -344,7 +344,7 @@ export function ProjectsView({ onSettings }: { onSettings: () => void }): React.
   return (
     <>
       <div className="page-head">
-        <h1>Projects</h1>
+        <h1>ClickUp</h1>
         <div className="page-head-tools">
           <span className="count-note">
             {status.teamName}

@@ -5,7 +5,7 @@ import type { ClickupDropdownField, ClickupList } from '../../shared/types'
  * "Send to ClickUp" dialog: pick a list (last choice remembered), confirm the
  * task name/description/assignee/due, create the task. Used for a meeting
  * action item (prefilled, credited back to the meeting) and for a task typed
- * from scratch on the Projects page.
+ * from scratch on the ClickUp page.
  *
  * If the chosen list has a "Requestor" dropdown custom field (the Data
  * Governance lists do, inherited from their folder), a Requestor picker

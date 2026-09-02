@@ -265,7 +265,7 @@ function workspaceContext(): string {
         (t) => `${t.name} — ${t.status}${t.dueDate ? `, due ${t.dueDate}` : ''}`
       )
       parts.push(
-        `<clickup_tasks note="the user's open ClickUp tasks as of the last Projects refresh">\n${lines.join('\n')}\n</clickup_tasks>`
+        `<clickup_tasks note="the user's open ClickUp tasks as of the last ClickUp page refresh">\n${lines.join('\n')}\n</clickup_tasks>`
       )
     }
   } catch {
