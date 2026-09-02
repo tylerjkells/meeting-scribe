@@ -325,7 +325,12 @@ export default function App(): React.JSX.Element {
           {view.name === 'projects' && (
             <ProjectsView onSettings={() => setView({ name: 'settings' })} />
           )}
-          {view.name === 'mail' && <MailView onSettings={() => setView({ name: 'settings' })} />}
+          {view.name === 'mail' && (
+            <MailView
+              onSettings={() => setView({ name: 'settings' })}
+              onOpenPerson={(person) => setView({ name: 'person', person })}
+            />
+          )}
           {view.name === 'toolbox' && <ToolboxView />}
           {view.name === 'import' && (
             <ImportView

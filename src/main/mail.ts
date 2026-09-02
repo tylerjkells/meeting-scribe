@@ -1,4 +1,4 @@
-import { BrowserWindow } from 'electron'
+import { app, BrowserWindow } from 'electron'
 import {
   existsSync,
   mkdirSync,
@@ -6,12 +6,13 @@ import {
   readFileSync,
   statSync,
   watch,
+  writeFileSync,
   type FSWatcher
 } from 'fs'
 import { join } from 'path'
 import { getMailFolder } from './settings'
 import { readDirectory } from './directory'
-import type { MailMessage, MailStatus } from '../shared/types'
+import type { MailMessage, MailStatus, MailTriage } from '../shared/types'
 
 // ---------------------------------------------------------------------------
 // Mail bridge: Rowan never talks to Exchange. A Power Automate flow drops one
@@ -291,6 +292,38 @@ export function mailStatus(): MailStatus {
     count: messages.length,
     newestAt: messages[0]?.receivedAt ?? null
   }
+}
+
+// ---------------------------------------------------------------------------
+// Triage: the one-way sync means Rowan can't archive or mark mail read in
+// Exchange, so it keeps its own "handled" list in userData/mail-triage.json.
+// ---------------------------------------------------------------------------
+
+function triageFile(): string {
+  return join(app.getPath('userData'), 'mail-triage.json')
+}
+
+export function readMailTriage(): MailTriage {
+  try {
+    const raw = JSON.parse(readFileSync(triageFile(), 'utf8')) as Partial<MailTriage>
+    return { handled: raw.handled && typeof raw.handled === 'object' ? raw.handled : {} }
+  } catch {
+    return { handled: {} }
+  }
+}
+
+export function setMailHandled(messageId: string, handled: boolean): MailTriage {
+  const triage = readMailTriage()
+  if (handled) triage.handled[messageId] = new Date().toISOString()
+  else delete triage.handled[messageId]
+  // forget ids that are no longer in the folder, so the file doesn't grow forever
+  const live = new Set(readMailbox().map((m) => m.id))
+  for (const id of Object.keys(triage.handled)) {
+    if (!live.has(id) && id !== messageId) delete triage.handled[id]
+  }
+  mkdirSync(app.getPath('userData'), { recursive: true })
+  writeFileSync(triageFile(), JSON.stringify(triage, null, 2))
+  return triage
 }
 
 /** Make sure the outbound folder exists, ready for reply drafts. */

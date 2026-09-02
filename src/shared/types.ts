@@ -220,6 +220,10 @@ export interface WeeklyDigest {
 export interface ClickupTask {
   id: string
   name: string
+  /** the parent task's name when this is a subtask */
+  parentName: string | null
+  /** the list's "Requestor" dropdown value, where the list has that field */
+  requestor: string | null
   /** plain-text description, trimmed */
   description: string | null
   status: string
@@ -238,6 +242,29 @@ export interface ClickupTask {
 }
 
 /** one entry in the local ClickUp changelog, produced by diffing refreshes */
+/** one comment on a task's thread */
+export interface ClickupComment {
+  id: string
+  author: string
+  text: string
+  /** ISO timestamp */
+  at: string
+}
+
+/** a workspace member a task can be assigned to */
+export interface ClickupMember {
+  id: number
+  name: string
+  email: string
+}
+
+export interface ClickupRefreshResult {
+  tasks: ClickupTask[]
+  events: ClickupActivityEvent[]
+  /** the workspace has more open tasks than were fetched */
+  truncated: boolean
+}
+
 export interface ClickupActivityEvent {
   id: string
   /** ISO timestamp of when the change was noticed (or made) */
@@ -571,6 +598,14 @@ export interface MailMessage {
   webLink: string | null
   /** the file on disk this was read from */
   file: string
+}
+
+/**
+ * Rowan's own read on the inbox. It can't write back to Exchange, so
+ * "handled" lives here: message id -> when it was marked.
+ */
+export interface MailTriage {
+  handled: Record<string, string>
 }
 
 export interface MailStatus {

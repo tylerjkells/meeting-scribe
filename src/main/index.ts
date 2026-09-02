@@ -75,9 +75,11 @@ import {
   toolboxImagesDir
 } from './toolbox'
 import {
+  clickupComments,
   clickupListFields,
   clickupLists,
   clickupListStatuses,
+  clickupMembers,
   clickupStatus,
   commentClickupTask,
   completeClickupTask,
@@ -85,13 +87,18 @@ import {
   disconnectClickup,
   pushClickupTask,
   refreshClickup,
+  renameClickupTask,
+  setClickupTaskAssignee,
   setClickupTaskDue,
+  setClickupTaskPriority,
   setClickupTaskStatus
 } from './clickup'
 import {
   ensureMailDirs,
   mailStatus,
+  readMailTriage,
   readMailbox,
+  setMailHandled,
   startMailWatch,
   stopMailWatch
 } from './mail'
@@ -904,6 +911,10 @@ function registerIpc(): void {
   )
   ipcMain.handle('mail:queueDraft', (_e, input: MailDraftInput) => queueMailDraft(input))
   ipcMain.handle('mail:summarize', (_e, messageId: string) => summarizeMailMessage(messageId))
+  ipcMain.handle('mail:triage', () => readMailTriage())
+  ipcMain.handle('mail:setHandled', (_e, messageId: string, handled: boolean) =>
+    setMailHandled(messageId, handled)
+  )
 
   // --- daily recap ---
   ipcMain.handle('recap:build', () => todaysBrief())
@@ -919,6 +930,21 @@ function registerIpc(): void {
   ipcMain.handle('clickup:refresh', (_e, scope: 'mine' | 'all' = 'mine') => refreshClickup(scope))
   ipcMain.handle('clickup:lists', () => clickupLists())
   ipcMain.handle('clickup:listFields', (_e, listId: string) => clickupListFields(listId))
+  ipcMain.handle('clickup:members', () => clickupMembers())
+  ipcMain.handle('clickup:comments', (_e, taskId: string) => clickupComments(taskId))
+  ipcMain.handle(
+    'clickup:setPriority',
+    (_e, taskId: string, priority: string | null, name: string, url?: string) =>
+      setClickupTaskPriority(taskId, priority, name, url)
+  )
+  ipcMain.handle('clickup:rename', (_e, taskId: string, name: string, url?: string) =>
+    renameClickupTask(taskId, name, url)
+  )
+  ipcMain.handle(
+    'clickup:setAssignee',
+    (_e, taskId: string, assignee: string, name: string, url?: string) =>
+      setClickupTaskAssignee(taskId, assignee, name, url)
+  )
   ipcMain.handle('clickup:push', (_e, input: ClickupPushInput) => pushClickupTask(input))
   ipcMain.handle(
     'clickup:complete',

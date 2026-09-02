@@ -13,10 +13,18 @@ module of several.)
   from a CSV export in one import; every person is auto-enriched with their
   meeting history, what they own, and what you owe them.
 - **ClickUp** — a ClickUp companion (personal API token, stored encrypted):
-  every open task assigned to you grouped by due date or project, complete /
-  re-date / comment in place, a Mine/Everyone scope, and an Activity changelog
-  built by diffing refreshes. Meeting action items push to real ClickUp tasks
+  every open task assigned to you grouped by due date or project, search,
+  complete / re-date / re-prioritize / reassign / rename / comment in place
+  with the task's recent comments shown, a Mine/Everyone scope, quiet
+  auto-refresh, and an Activity changelog built by diffing refreshes with an
+  unread badge. Meeting action items and emails push to real ClickUp tasks
   with assignee, due date, and the list's Requestor field mapped.
+- **Mail** — an inbox mirror fed by a Power Automate flow into a synced
+  OneDrive folder (no mailbox credentials): threads grouped by conversation,
+  automated mail and handled mail tucked away behind toggles, full-text
+  search, AI summaries and drafted replies that land in Outlook Drafts, one
+  click to a ClickUp task or a colleague's People page, and a warning when
+  the flow goes quiet.
 - **Links** — the org link hub, grouped by category with pinned favorites that
   also appear on Today; compact list or thumbnail cards (upload a screenshot
   or auto-capture the page).
