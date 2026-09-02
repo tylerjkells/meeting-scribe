@@ -14,6 +14,7 @@ import {
 import { parseDueDate } from '../../../shared/dates'
 import { ClickupPushDialog } from '../ClickupPush'
 import { exportFilename, followUpEmail, meetingToMarkdown, summaryToMarkdown } from '../markdown'
+import { retranscribeMeeting } from '../retranscribe'
 
 /**
  * Who was in the room: edit the meeting's participant list by hand (directory
@@ -458,6 +459,9 @@ export function MeetingView({
   const [hasClickup, setHasClickup] = useState(false)
   const [pushIdx, setPushIdx] = useState<number | null>(null)
   const [identifying, setIdentifying] = useState(false)
+  /** the decoding phase of a re-transcription, before the pipeline takes over */
+  const [retranscribing, setRetranscribing] = useState<string | null>(null)
+  const [retranscribeError, setRetranscribeError] = useState<string | null>(null)
   const [identifyError, setIdentifyError] = useState<string | null>(null)
   const [editingAttendees, setEditingAttendees] = useState(false)
   const [playheadMs, setPlayheadMs] = useState(-1)
@@ -556,6 +560,25 @@ export function MeetingView({
     if (path) {
       setExportedTo(path)
       setTimeout(() => setExportedTo(null), 4000)
+    }
+  }
+
+  async function retranscribe(): Promise<void> {
+    if (!meeting || retranscribing) return
+    const sure = await confirm({
+      title: 'Re-transcribe this meeting?',
+      body: 'The audio is run through the transcription engine again with the model chosen in Settings. The current transcript is replaced; the summary is rewritten afterwards if auto-summarize is on.',
+      confirmLabel: 'Re-transcribe'
+    })
+    if (!sure) return
+    setRetranscribeError(null)
+    setRetranscribing('Starting…')
+    try {
+      await retranscribeMeeting(meeting.id, setRetranscribing)
+    } catch (err) {
+      setRetranscribeError(err instanceof Error ? err.message : 'Re-transcription failed.')
+    } finally {
+      setRetranscribing(null)
     }
   }
 
@@ -764,12 +787,35 @@ export function MeetingView({
         </div>
       )}
 
-      {meeting.stage === 'error' && (
+      {retranscribing && (
+        <div className="stage-banner">
+          <span className="spinner" aria-hidden="true" />
+          {retranscribing}
+        </div>
+      )}
+      {retranscribeError && !retranscribing && (
         <div className="stage-banner error" role="alert">
-          {meeting.error ?? 'Processing failed.'}
-          <button className="btn" onClick={() => window.scribe.meetings.retry(meeting.id)}>
-            Try again
-          </button>
+          {retranscribeError}
+        </div>
+      )}
+
+      {meeting.stage === 'error' && !retranscribing && (
+        <div className="stage-banner error" role="alert">
+          <span className="stage-banner-text">{meeting.error ?? 'Processing failed.'}</span>
+          <span className="stage-banner-actions">
+            <button className="btn" onClick={() => window.scribe.meetings.retry(meeting.id)}>
+              Try again
+            </button>
+            {meeting.hasAudio && (
+              <button
+                className="btn"
+                onClick={retranscribe}
+                title="Decode the saved recording and run the transcription engine on it again"
+              >
+                Re-transcribe from audio
+              </button>
+            )}
+          </span>
         </div>
       )}
 
@@ -915,6 +961,16 @@ export function MeetingView({
               <div className="transcript-tools">
                 {meeting.transcript.some((s) => s.speaker === 'me' || s.speaker === 'them') && (
                   <SpeakerNames meeting={meeting} onSaved={setMeeting} />
+                )}
+                {meeting.hasAudio && (
+                  <button
+                    className="btn transcript-identify"
+                    disabled={!!retranscribing || meeting.stage === 'transcribing'}
+                    title="Run the transcription engine on the saved audio again, e.g. after switching to a better model in Settings"
+                    onClick={retranscribe}
+                  >
+                    Re-transcribe
+                  </button>
                 )}
                 {hasApiKey && (
                   <button

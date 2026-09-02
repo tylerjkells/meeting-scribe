@@ -18,20 +18,24 @@ import { autoUpdater } from 'electron-updater'
 // module resolves a path under it
 import { channel } from './channel'
 import {
-  listMeetings,
-  readMeeting,
-  writeMeeting,
-  deleteMeeting,
-  beginRecording,
   appendPcm,
-  finishRecording,
+  appendRetranscribePcm,
+  beginRecording,
+  beginRetranscribe,
   cancelRecording,
-  stashNotes,
-  readStashedNotes,
+  cancelRetranscribe,
+  deleteMeeting,
   findAudio,
-  meetingsRoot,
+  finishRecording,
+  finishRetranscribe,
+  listMeetings,
   meetingDir,
-  recoverOrphanedRecordings
+  meetingsRoot,
+  readMeeting,
+  readStashedNotes,
+  recoverOrphanedRecordings,
+  stashNotes,
+  writeMeeting
 } from './store'
 import {
   getSettings,
@@ -513,6 +517,20 @@ function registerIpc(): void {
   ipcMain.handle('meetings:retry', (_e, id: string) => {
     processMeeting(id)
   })
+  // re-transcribe: the renderer streams decoded 16kHz PCM, then the pipeline reruns
+  ipcMain.handle('retrans:begin', (_e, id: string) => beginRetranscribe(id))
+  ipcMain.on('retrans:pcm', (_e, id: string, chunk: ArrayBuffer) => {
+    appendRetranscribePcm(id, Buffer.from(chunk))
+  })
+  ipcMain.handle('retrans:finish', async (_e, id: string) => {
+    const m = await finishRetranscribe(id)
+    if (m) {
+      for (const win of BrowserWindow.getAllWindows()) win.webContents.send('meeting:updated', m)
+      processMeeting(id)
+    }
+    return m
+  })
+  ipcMain.handle('retrans:cancel', (_e, id: string) => cancelRetranscribe(id))
   ipcMain.handle('meetings:resummarize', (_e, id: string, model?: string) => {
     summarizeMeeting(id, model)
   })

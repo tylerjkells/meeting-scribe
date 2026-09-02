@@ -1498,8 +1498,11 @@ a.rollup-task:hover {
 
 .empty-state-actions {
   display: flex;
-  gap: var(--s2);
+  align-items: center;
   justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--s3);
+  margin-top: var(--s5);
 }
 
 /* org chart: an Outlook-style focused browser — manager chain on top, a peer
@@ -1992,10 +1995,16 @@ a.rollup-task:hover {
   margin: 0 auto;
 }
 
-.empty-state .btn-primary,
-.empty-state-actions .btn {
+/* a lone primary button sits below the copy; a button row carries the gap itself */
+.empty-state > .btn-primary {
   margin-top: var(--s5);
+}
+.empty-state .btn {
   padding: 10px 22px;
+  line-height: 1.2;
+}
+.empty-state-actions .btn {
+  margin-top: 0;
 }
 
 /* beats the `.empty-state p` margin reset above (higher specificity) */
@@ -2547,6 +2556,15 @@ a.rollup-task:hover {
   font-size: 13.5px;
 }
 
+.stage-banner-text {
+  flex: 1;
+  min-width: 0;
+}
+.stage-banner-actions {
+  display: flex;
+  flex: none;
+  gap: var(--s2);
+}
 .stage-banner.error {
   border-color: var(--accent-dim);
   color: var(--accent-strong);
@@ -5386,13 +5404,6 @@ button.speaker-chip-btn:hover {
   color: var(--accent);
   text-decoration: underline;
   cursor: pointer;
-}
-
-.empty-actions {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--s3);
 }
 
 /* ---------- ClickUp page polish ---------- */

@@ -124,6 +124,12 @@ const api = {
       ipcRenderer.invoke('meetings:rename', id, title),
     delete: (id: string): Promise<void> => ipcRenderer.invoke('meetings:delete', id),
     retry: (id: string): Promise<void> => ipcRenderer.invoke('meetings:retry', id),
+    retranscribeBegin: (id: string): Promise<boolean> => ipcRenderer.invoke('retrans:begin', id),
+    retranscribePcm: (id: string, chunk: ArrayBuffer): void =>
+      ipcRenderer.send('retrans:pcm', id, chunk),
+    retranscribeFinish: (id: string): Promise<Meeting | null> =>
+      ipcRenderer.invoke('retrans:finish', id),
+    retranscribeCancel: (id: string): Promise<void> => ipcRenderer.invoke('retrans:cancel', id),
     resummarize: (id: string, model?: string): Promise<void> =>
       ipcRenderer.invoke('meetings:resummarize', id, model),
     exportMarkdown: (defaultName: string, content: string): Promise<string | null> =>

@@ -259,7 +259,7 @@ export function MailView({
           the synced folder to get started.
           {status.error && <> ({status.error})</>}
         </p>
-        <div className="empty-actions">
+        <div className="empty-state-actions">
           <button className="btn btn-primary" onClick={onSettings}>
             Set it up in Settings
           </button>
