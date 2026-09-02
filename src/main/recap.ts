@@ -10,6 +10,7 @@ import { getSettings } from './settings'
 import { aiChat, aiReady } from './ai'
 import { stripDashes, VOICE_RULES } from './voice'
 import type { ActionRollupItem, DailyRecap, MailMessage, RecapMail } from '../shared/types'
+import { isOpenAction } from '../shared/actions'
 
 // ---------------------------------------------------------------------------
 // Morning brief: the day pulled together from everything Rowan already holds —
@@ -138,7 +139,7 @@ export async function buildDailyRecap(): Promise<DailyRecap> {
       })
     }
     for (const rollup of actionRollup(m, ctx)) {
-      if (rollup.done) continue
+      if (!isOpenAction(rollup)) continue
       if (rollup.owners.includes(SELF)) myOpen.push(rollup)
     }
   }

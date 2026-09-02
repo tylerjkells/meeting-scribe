@@ -8,6 +8,7 @@ import type {
   PersonProfile,
   PersonSummary
 } from '../shared/types'
+import { isOpenAction } from '../shared/actions'
 
 // ---------------------------------------------------------------------------
 // Person pages: everything the library knows about one colleague, assembled
@@ -63,7 +64,7 @@ export function listPeople(): PersonSummary[] {
       add(name).meetingCount++
     }
     for (const item of actionRollup(m, ctx)) {
-      if (item.done) continue
+      if (!isOpenAction(item)) continue
       for (const owner of item.owners) {
         if (owner !== SELF) add(owner).openItems++
       }
@@ -106,7 +107,7 @@ export function personProfile(name: string): PersonProfile | null {
 
     for (const rollup of actionRollup(m, ctx)) {
       if (rollup.owners.some((o) => o.toLowerCase() === key)) items.push(rollup)
-      else if (rollup.owners.includes(SELF) && !rollup.done) myCommitments.push(rollup)
+      else if (rollup.owners.includes(SELF) && isOpenAction(rollup)) myCommitments.push(rollup)
     }
   }
 

@@ -1015,6 +1015,34 @@ function registerIpc(): void {
     return items
   })
 
+  // dismiss / snooze: triage states that aren't "done"
+  ipcMain.handle(
+    'actions:setState',
+    (
+      _e,
+      meetingId: string,
+      index: number,
+      patch: { dismissed?: boolean; snoozedUntil?: string | null }
+    ) => {
+      const m = readMeeting(meetingId)
+      const item = m?.summary?.actionItems[index]
+      if (!m || !item) return null
+      if (patch.dismissed !== undefined) {
+        if (patch.dismissed) item.dismissed = true
+        else delete item.dismissed
+      }
+      if (patch.snoozedUntil !== undefined) {
+        if (patch.snoozedUntil) item.snoozedUntil = patch.snoozedUntil
+        else delete item.snoozedUntil
+      }
+      writeMeeting(m)
+      for (const win of BrowserWindow.getAllWindows()) {
+        win.webContents.send('meeting:updated', m)
+      }
+      return m
+    }
+  )
+
   ipcMain.handle('actions:toggle', (_e, meetingId: string, index: number): boolean => {
     const m = readMeeting(meetingId)
     const item = m?.summary?.actionItems[index]

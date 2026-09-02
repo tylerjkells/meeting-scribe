@@ -396,6 +396,11 @@ const api = {
   },
   actions: {
     list: (): Promise<ActionRollupItem[]> => ipcRenderer.invoke('actions:list'),
+    setState: (
+      meetingId: string,
+      index: number,
+      patch: { dismissed?: boolean; snoozedUntil?: string | null }
+    ): Promise<Meeting | null> => ipcRenderer.invoke('actions:setState', meetingId, index, patch),
     toggle: (meetingId: string, index: number): Promise<boolean> =>
       ipcRenderer.invoke('actions:toggle', meetingId, index),
     setOwner: (meetingId: string, index: number, owner: string | null): Promise<Meeting | null> =>

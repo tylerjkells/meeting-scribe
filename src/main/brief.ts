@@ -1,5 +1,6 @@
 import { listMeetings, readMeeting } from './store'
 import type { EventBrief, Meeting } from '../shared/types'
+import { isOpenAction } from '../shared/actions'
 
 // ---------------------------------------------------------------------------
 // Pre-meeting briefs: for a calendar event, find the most recent library
@@ -82,7 +83,7 @@ export function briefForEvent(eventTitle: string): EventBrief | null {
     tldr: s?.tldr ?? null,
     decisions: (s?.decisions ?? []).filter(mentions),
     openActions: (s?.actionItems ?? [])
-      .filter((a) => !a.done && mentions(a.task))
+      .filter((a) => isOpenAction(a) && mentions(a.task))
       .map((a) => ({ task: a.task, owner: a.owner, due: a.due })),
     openQuestions: (s?.openQuestions ?? []).filter(mentions)
   }

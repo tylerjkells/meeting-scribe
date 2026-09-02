@@ -848,8 +848,13 @@ export function MeetingView({
             <Collapse label="Action items" meta={`${meeting.summary.actionItems.length}`}>
               <div>
                 {meeting.summary.actionItems.map((a, i) => (
-                  <div className="action-item" key={i}>
+                  <div
+                    className={`action-item ${a.done ? 'done' : ''} ${a.dismissed ? 'dismissed' : ''}`}
+                    key={i}
+                  >
                     <span className="action-task">{a.task}</span>
+                    {a.dismissed && <span className="action-state">Dismissed</span>}
+                    {!a.dismissed && a.done && <span className="action-state">Done</span>}
                     <OwnerEditor
                       owner={a.owner}
                       suggestions={knownOwners}

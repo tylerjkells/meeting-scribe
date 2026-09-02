@@ -173,6 +173,9 @@ export function actionRollup(m: Meeting, ctx: IdentityContext): ActionRollupItem
     done: a.done ?? false,
     dueDate: a.dueDate ?? parseDueDate(a.due, m.createdAt) ?? undefined,
     dueEdited: !!a.dueDate,
-    owners: resolveOwners(a.owner, ctx)
+    owners: resolveOwners(a.owner, ctx),
+    dismissed: a.dismissed ?? false,
+    snoozedUntil: a.snoozedUntil ?? undefined,
+    clickupUrl: a.clickupUrl
   }))
 }
