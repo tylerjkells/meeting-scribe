@@ -241,6 +241,15 @@ export function TodayView({
     day: 'numeric'
   })
 
+  /** hide this event (and any sharing its title) everywhere, from right here */
+  async function hideEvent(title: string): Promise<void> {
+    const s = await window.scribe.settings.get()
+    if (!s.calendarIgnores.some((x) => x.toLowerCase() === title.toLowerCase())) {
+      await window.scribe.settings.update({ calendarIgnores: [...s.calendarIgnores, title] })
+    }
+    setEvents((prev) => prev.filter((e) => e.title.toLowerCase() !== title.toLowerCase()))
+  }
+
   async function toggleAction(item: ActionRollupItem): Promise<void> {
     const newDone = await window.scribe.actions.toggle(item.meetingId, item.index)
     setActions((prev) =>
@@ -383,9 +392,18 @@ export function TodayView({
                       )}
                       {brief && briefOpen && <BriefPanel brief={brief} onOpen={onOpen} />}
                     </span>
-                    {live && (
+                    {live ? (
                       <button className="btn btn-primary sched-record" onClick={onRecord}>
                         <MicIcon /> Record
+                      </button>
+                    ) : (
+                      <button
+                        className="sched-hide"
+                        onClick={() => hideEvent(ev.title)}
+                        title={`Hide “${ev.title}” everywhere in Rowan — undo in Settings → Calendar`}
+                        aria-label={`Hide "${ev.title}" from Rowan`}
+                      >
+                        Hide
                       </button>
                     )}
                   </div>

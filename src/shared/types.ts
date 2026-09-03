@@ -573,6 +573,12 @@ export interface AppSettings {
   mailFolder: string | null
   /** signature appended to every reply draft, as sanitized inline HTML */
   mailSignatureHtml: string
+  /**
+   * calendar events whose title contains one of these (case-insensitive) are
+   * hidden everywhere: Today, the month calendar, briefs, recaps, nudges,
+   * and meeting auto-titling
+   */
+  calendarIgnores: string[]
   /** the same signature as plain text, derived from the HTML */
   mailSignatureText: string
 }

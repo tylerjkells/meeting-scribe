@@ -1,5 +1,5 @@
 import ical, { type VEvent } from 'node-ical'
-import { getCalendarUrl } from './settings'
+import { getCalendarUrl, getSettings } from './settings'
 import type { CalendarEvent } from '../shared/types'
 
 // ---------------------------------------------------------------------------
@@ -70,6 +70,23 @@ function findJoinUrl(...fields: string[]): string | null {
   return null
 }
 
+/**
+ * Drop events the user told the app to ignore (planning blocks, lunch, …).
+ * Case-insensitive substring match on the title, applied on every read so a
+ * settings change takes effect without waiting out the feed cache. This is
+ * the one gate every consumer passes through — Today, the month calendar,
+ * event briefs, the daily recap, the record nudge, and recording
+ * auto-titling all read the calendar from here.
+ */
+function withoutIgnored(events: CalendarEvent[]): CalendarEvent[] {
+  const ignores = getSettings().calendarIgnores.map((t) => t.toLowerCase())
+  if (ignores.length === 0) return events
+  return events.filter((e) => {
+    const title = e.title.toLowerCase()
+    return !ignores.some((t) => title.includes(t))
+  })
+}
+
 /** Fetch and expand the connected feed for [today, today + WINDOW_DAYS). */
 export async function refreshCalendar(force = false): Promise<CalendarEvent[]> {
   const url = getCalendarUrl()
@@ -78,7 +95,7 @@ export async function refreshCalendar(force = false): Promise<CalendarEvent[]> {
     return []
   }
   if (!force && cache && Date.now() - cache.fetchedAt < CACHE_TTL_MS) {
-    return cache.events
+    return withoutIgnored(cache.events)
   }
 
   const res = await fetch(url.replace(/^webcal:\/\//i, 'https://'))
@@ -153,7 +170,7 @@ export async function refreshCalendar(force = false): Promise<CalendarEvent[]> {
 
   events.sort((a, b) => a.start.localeCompare(b.start))
   cache = { events, fetchedAt: Date.now() }
-  return events
+  return withoutIgnored(events)
 }
 
 /** Events overlapping a range, for the month calendar. */
