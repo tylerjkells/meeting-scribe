@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react'
 
 /** release notes shown once after an update lands (auto-updates are silent) */
 const NOTES: Record<string, string[]> = {
+  '0.26.0': [
+    'The morning brief became three. Set your work hours in Settings → Workday, and Today writes a morning brief when your day starts, a midday check-in at noon covering what changed — meetings held, new asks with your name on them, mail that wants an answer, what the afternoon holds — and an end-of-day wrap half an hour before you finish: where the day landed, what follows you to tomorrow, and tomorrow\u2019s first meetings. Each brief replaces the one before it; anything still relevant carries forward on its own.'
+  ],
   '0.25.2': [
     'Check for updates yourself: Settings → About has the button. It tells you whether you are current, and when a new version is found it downloads and a Restart to update button appears there and in the sidebar — no more quitting and relaunching to pick one up.',
     'Today no longer lists your stale action items — anything from a meeting over two weeks old with nothing due. They wait in the Action items page’s Stale section, and the “All open items” link on Today says how many are there to review.'

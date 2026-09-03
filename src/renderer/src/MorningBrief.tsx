@@ -2,10 +2,12 @@ import { useCallback, useEffect, useState } from 'react'
 import type { DailyRecap } from '../../shared/types'
 
 /**
- * The morning brief on Today: yesterday, overnight, and the day ahead. The
- * counts are assembled locally and cost nothing; the written brief is one
- * model call a day, generated on the first open past 8am and cached, so this
- * component only ever displays what the main process already decided to make.
+ * The day's brief on Today: morning at the workday's start, a midday check-in
+ * at noon, an end-of-day wrap half an hour before close. Each replaces the
+ * previous — anything still relevant is re-said by the newer one. The counts
+ * are assembled locally and cost nothing; each written brief is one model
+ * call, generated when its slot starts and cached, so this component only
+ * ever displays what the main process already decided to make.
  */
 export function MorningBrief({ onMail }: { onMail: () => void }): React.JSX.Element {
   const [recap, setRecap] = useState<DailyRecap | null>(null)
@@ -51,7 +53,7 @@ export function MorningBrief({ onMail }: { onMail: () => void }): React.JSX.Elem
   return (
     <section className="today-section brief">
       <div className="brief-head">
-        <div className="card-subhead">Morning brief</div>
+        <div className="card-subhead">{recap.slotLabel ?? 'Morning brief'}</div>
         <button className="btn btn-ghost brief-refresh" onClick={write} disabled={writing}>
           {writing ? 'Writing…' : recap.narrative ? 'Rewrite' : 'Write the brief'}
         </button>
@@ -87,7 +89,12 @@ export function MorningBrief({ onMail }: { onMail: () => void }): React.JSX.Elem
         <p className="brief-body">{recap.narrative}</p>
       ) : (
         <p className="opt-desc">
-          The written brief arrives on its own after 8am. Write it now if you want it early.
+          {recap.slot === 'close'
+            ? 'The end-of-day brief arrives on its own near the end of your workday.'
+            : recap.slot === 'midday'
+              ? 'The midday check-in arrives on its own around noon.'
+              : 'The written brief arrives on its own when your workday starts.'}{' '}
+          Write it now if you want it early.
         </p>
       )}
       {error && <p className="field-note error">{error}</p>}

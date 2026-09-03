@@ -859,6 +859,43 @@ export function SettingsView({
 
       <section className="settings-section">
         <header className="settings-label">
+          <h2>Workday</h2>
+          <p className="hint">
+            Times the three daily briefs on Today: the morning brief when your day starts, a
+            midday check-in at noon, and an end-of-day wrap half an hour before your day ends.
+            Each replaces the one before it.
+          </p>
+        </header>
+        <div className="settings-body">
+          <div className="field-row">
+            <label className="cu-control">
+              Start
+              <input
+                type="time"
+                className="text-input"
+                value={settings.workdayStart}
+                onChange={async (e) =>
+                  onChange(await window.scribe.settings.update({ workdayStart: e.target.value }))
+                }
+              />
+            </label>
+            <label className="cu-control">
+              End
+              <input
+                type="time"
+                className="text-input"
+                value={settings.workdayEnd}
+                onChange={async (e) =>
+                  onChange(await window.scribe.settings.update({ workdayEnd: e.target.value }))
+                }
+              />
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <section className="settings-section">
+        <header className="settings-label">
           <h2>Calendar</h2>
           <p className="hint">
             Read-only, via your calendar&apos;s secret iCal address, stored encrypted on this

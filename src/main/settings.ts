@@ -39,6 +39,9 @@ interface StoredSettings {
   yourName: string
   /** identity merges: normalized raw name -> canonical display name */
   personAliases: Record<string, string>
+  /** HH:MM local bounds of the workday; they time the three daily briefs */
+  workdayStart: string
+  workdayEnd: string
   /** calendar-event title fragments to hide everywhere */
   calendarIgnores: string[]
   /** base64 of safeStorage-encrypted API key */
@@ -81,6 +84,8 @@ const DEFAULTS: StoredSettings = {
   people: [],
   yourName: '',
   personAliases: {},
+  workdayStart: '08:00',
+  workdayEnd: '16:30',
   calendarIgnores: [],
   apiKeyEncrypted: null,
   calendarUrlEncrypted: null,
@@ -145,6 +150,8 @@ export function getSettings(): AppSettings {
     people: s.people ?? [],
     yourName: s.yourName ?? '',
     personAliases: s.personAliases ?? {},
+    workdayStart: validTime(s.workdayStart, DEFAULTS.workdayStart),
+    workdayEnd: validTime(s.workdayEnd, DEFAULTS.workdayEnd),
     calendarIgnores: s.calendarIgnores ?? [],
     hasApiKey: !!s.apiKeyEncrypted,
     hasOpenaiKey: !!s.openaiKeyEncrypted,
@@ -200,6 +207,8 @@ export function updateSettings(
       | 'people'
       | 'yourName'
       | 'calendarIgnores'
+      | 'workdayStart'
+      | 'workdayEnd'
     >
   >
 ): AppSettings {
@@ -255,6 +264,10 @@ export function updateSettings(
   if (Array.isArray(patch.people)) {
     s.people = dedupeNames(patch.people)
   }
+  if (typeof patch.workdayStart === 'string')
+    s.workdayStart = validTime(patch.workdayStart, s.workdayStart ?? DEFAULTS.workdayStart)
+  if (typeof patch.workdayEnd === 'string')
+    s.workdayEnd = validTime(patch.workdayEnd, s.workdayEnd ?? DEFAULTS.workdayEnd)
   if (Array.isArray(patch.calendarIgnores)) {
     const seen = new Set<string>()
     s.calendarIgnores = patch.calendarIgnores
