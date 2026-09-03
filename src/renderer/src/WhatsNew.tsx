@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react'
 
 /** release notes shown once after an update lands (auto-updates are silent) */
 const NOTES: Record<string, string[]> = {
+  '0.25.1': [
+    'Hide calendar events you don’t want treated as meetings — planning blocks, lunch, focus time. Hover an event on Today and click Hide, or manage the list under Settings → Calendar (matches any event whose title contains your text). Hidden events vanish from Today, the month calendar, briefs, recaps, and the record nudge, and recordings stop taking their names.'
+  ],
   '0.25.0': [
     'Action items got a rethink for when the list runs long. Dated items lead, grouped into Overdue, Today, This week, and Later; everything without a date sits under its meeting, where it makes sense. Items from meetings over two weeks old with no live date fold into a Stale section you can review or dismiss in one go. Every item can now be dismissed (it was never really a task) or snoozed until a day you pick, both kept apart from Done so the done list stays honest. Select several and act on them together, search the list, push any item to ClickUp from here, and the long row of person chips folds the quieter names into a picker.',
     'Dismissed and snoozed items drop out everywhere at once: Today, the morning brief, the weekly digest, the recap, series pages, and People pages all share one idea of what is open.',

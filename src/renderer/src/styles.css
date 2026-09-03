@@ -6014,3 +6014,69 @@ button.speaker-chip-btn:hover {
   border-radius: 999px;
   border: 1px solid var(--line);
 }
+
+/* ---------- calendar ignore list ---------- */
+.cal-ignores {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  margin-top: var(--s3);
+  padding-top: var(--s3);
+  border-top: 1px solid var(--line-soft);
+}
+.cal-ignores .hint {
+  margin: 0;
+}
+.cal-ignore-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+.cal-ignore-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 550;
+  padding: 3px 6px 3px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--bg-raised);
+  color: var(--ink-soft);
+}
+.cal-ignore-chip button {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--ink-faint);
+  font-size: 13px;
+  line-height: 1;
+}
+.cal-ignore-chip button:hover {
+  background: var(--bg-overlay);
+  color: var(--ink);
+}
+.sched-hide {
+  flex: none;
+  align-self: center;
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--ink-faint);
+  padding: 3px 10px;
+  border-radius: 6px;
+  opacity: 0;
+  transition:
+    opacity var(--t-fast) var(--ease-out),
+    background var(--t-fast) var(--ease-out),
+    color var(--t-fast) var(--ease-out);
+}
+.sched-row:hover .sched-hide,
+.sched-hide:focus-visible {
+  opacity: 1;
+}
+.sched-hide:hover {
+  background: var(--bg-overlay);
+  color: var(--ink);
+}

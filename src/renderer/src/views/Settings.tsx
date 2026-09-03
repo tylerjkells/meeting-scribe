@@ -321,6 +321,7 @@ export function SettingsView({
   const [claudeNote, setClaudeNote] = useState<{ ok: boolean; msg: string } | null>(null)
   const [backupNote, setBackupNote] = useState<{ ok: boolean; msg: string } | null>(null)
   const [calDraft, setCalDraft] = useState('')
+  const [ignoreDraft, setIgnoreDraft] = useState('')
   const [calStatus, setCalStatus] = useState<{ ok: boolean; msg: string } | null>(null)
   const [connectingCal, setConnectingCal] = useState(false)
   const [storage, setStorage] = useState<{ count: number; totalBytes: number; audioBytes: number } | null>(null)
@@ -465,6 +466,22 @@ export function SettingsView({
   async function disconnectCalendar(): Promise<void> {
     onChange(await window.scribe.calendar.disconnect())
     setCalStatus(null)
+  }
+
+  async function addCalendarIgnore(): Promise<void> {
+    const text = ignoreDraft.trim()
+    if (!text || !settings) return
+    onChange(await window.scribe.settings.update({
+      calendarIgnores: [...settings.calendarIgnores, text]
+    }))
+    setIgnoreDraft('')
+  }
+
+  async function removeCalendarIgnore(text: string): Promise<void> {
+    if (!settings) return
+    onChange(await window.scribe.settings.update({
+      calendarIgnores: settings.calendarIgnores.filter((t) => t !== text)
+    }))
   }
 
   async function addPersonToDirectory(): Promise<void> {
@@ -873,6 +890,45 @@ export function SettingsView({
               >
                 {connectingCal ? 'Checking…' : 'Connect'}
               </button>
+            </div>
+          )}
+          {settings.hasCalendar && (
+            <div className="cal-ignores">
+              <p className="hint">
+                Hide events whose title contains any of these — planning blocks, lunch, focus
+                time. Hidden events disappear from Today, the calendar, briefs, recaps, and the
+                record nudge, and recordings never take their names. You can also hover an event
+                on Today and click Hide.
+              </p>
+              {settings.calendarIgnores.length > 0 && (
+                <div className="cal-ignore-chips">
+                  {settings.calendarIgnores.map((t) => (
+                    <span className="cal-ignore-chip" key={t}>
+                      {t}
+                      <button
+                        onClick={() => removeCalendarIgnore(t)}
+                        aria-label={`Stop hiding "${t}"`}
+                        title="Stop hiding these events"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="field-row">
+                <input
+                  className="text-input"
+                  placeholder="e.g. Lunch, Plan the day"
+                  value={ignoreDraft}
+                  onChange={(e) => setIgnoreDraft(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && addCalendarIgnore()}
+                  aria-label="Hide events whose title contains"
+                />
+                <button className="btn" onClick={addCalendarIgnore} disabled={!ignoreDraft.trim()}>
+                  Hide events
+                </button>
+              </div>
             </div>
           )}
           {calStatus && (

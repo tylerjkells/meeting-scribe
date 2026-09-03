@@ -39,6 +39,8 @@ interface StoredSettings {
   yourName: string
   /** identity merges: normalized raw name -> canonical display name */
   personAliases: Record<string, string>
+  /** calendar-event title fragments to hide everywhere */
+  calendarIgnores: string[]
   /** base64 of safeStorage-encrypted API key */
   apiKeyEncrypted: string | null
   /** base64 of safeStorage-encrypted iCal feed URL (the URL is a secret) */
@@ -79,6 +81,7 @@ const DEFAULTS: StoredSettings = {
   people: [],
   yourName: '',
   personAliases: {},
+  calendarIgnores: [],
   apiKeyEncrypted: null,
   calendarUrlEncrypted: null,
   clickupTokenEncrypted: null,
@@ -142,6 +145,7 @@ export function getSettings(): AppSettings {
     people: s.people ?? [],
     yourName: s.yourName ?? '',
     personAliases: s.personAliases ?? {},
+    calendarIgnores: s.calendarIgnores ?? [],
     hasApiKey: !!s.apiKeyEncrypted,
     hasOpenaiKey: !!s.openaiKeyEncrypted,
     aiReady: s.aiProvider === 'openai' ? !!s.openaiKeyEncrypted : !!s.apiKeyEncrypted,
@@ -195,6 +199,7 @@ export function updateSettings(
       | 'mailSignatureHtml'
       | 'people'
       | 'yourName'
+      | 'calendarIgnores'
     >
   >
 ): AppSettings {
@@ -249,6 +254,18 @@ export function updateSettings(
   if (typeof patch.backupSkipAudio === 'boolean') s.backupSkipAudio = patch.backupSkipAudio
   if (Array.isArray(patch.people)) {
     s.people = dedupeNames(patch.people)
+  }
+  if (Array.isArray(patch.calendarIgnores)) {
+    const seen = new Set<string>()
+    s.calendarIgnores = patch.calendarIgnores
+      .map((t) => String(t).trim())
+      .filter((t) => {
+        const key = t.toLowerCase()
+        if (!t || seen.has(key)) return false
+        seen.add(key)
+        return true
+      })
+      .slice(0, 100)
   }
   if (typeof patch.yourName === 'string') s.yourName = patch.yourName.trim()
   persist()
