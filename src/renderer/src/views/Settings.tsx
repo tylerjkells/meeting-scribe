@@ -331,10 +331,14 @@ export function SettingsView({
     window.scribe.usage.get().then(setUsage)
   }, [])
   const [version, setVersion] = useState('')
+  const [updateBusy, setUpdateBusy] = useState(false)
+  const [updateNote, setUpdateNote] = useState<{ ok: boolean; msg: string } | null>(null)
+  const [updateReady, setUpdateReady] = useState(false)
 
   useEffect(() => {
     window.scribe.meetings.storageStats().then(setStorage)
     window.scribe.appVersion().then(setVersion)
+    return window.scribe.update.onReady(() => setUpdateReady(true))
     window.scribe.claude.status().then(setClaude)
   }, [])
 
@@ -1428,6 +1432,41 @@ export function SettingsView({
             </a>
             .
           </p>
+          <div className="field-row">
+            {updateReady ? (
+              <button className="btn btn-primary" onClick={() => window.scribe.update.install()}>
+                Restart to update
+              </button>
+            ) : (
+              <button
+                className="btn"
+                disabled={updateBusy}
+                onClick={async () => {
+                  setUpdateBusy(true)
+                  setUpdateNote(null)
+                  const r = await window.scribe.update.check()
+                  setUpdateBusy(false)
+                  if (r.status === 'downloading') {
+                    setUpdateNote({
+                      ok: true,
+                      msg: `Version ${r.version} is downloading — the restart button appears here (and in the sidebar) when it's ready.`
+                    })
+                  } else if (r.status === 'current') {
+                    setUpdateNote({ ok: true, msg: 'You are on the latest version.' })
+                  } else {
+                    setUpdateNote({ ok: false, msg: r.error ?? 'Could not check for updates.' })
+                  }
+                }}
+              >
+                {updateBusy ? 'Checking…' : 'Check for updates'}
+              </button>
+            )}
+          </div>
+          {updateNote && (
+            <p className={`field-note ${updateNote.ok ? 'ok' : 'error'}`} role="status">
+              {updateNote.msg}
+            </p>
+          )}
         </div>
       </section>
       </div>

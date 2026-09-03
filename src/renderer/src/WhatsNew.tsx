@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 /** release notes shown once after an update lands (auto-updates are silent) */
 const NOTES: Record<string, string[]> = {
   '0.25.2': [
+    'Check for updates yourself: Settings → About has the button. It tells you whether you are current, and when a new version is found it downloads and a Restart to update button appears there and in the sidebar — no more quitting and relaunching to pick one up.',
     'Today no longer lists your stale action items — anything from a meeting over two weeks old with nothing due. They wait in the Action items page’s Stale section, and the “All open items” link on Today says how many are there to review.'
   ],
   '0.25.1': [

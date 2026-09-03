@@ -412,6 +412,32 @@ app.on('window-all-closed', () => {
   app.quit()
 })
 
+/**
+ * Manual "Check for updates" from Settings. Reuses the same updater: if a
+ * newer release exists it downloads, and the regular update:ready chip
+ * appears once it's on disk. The result only says what was found.
+ */
+async function checkForUpdatesNow(): Promise<{
+  status: 'downloading' | 'current' | 'unavailable'
+  version?: string
+  error?: string
+}> {
+  if (channel !== 'stable') {
+    return { status: 'unavailable', error: 'Test and dev builds do not self-update.' }
+  }
+  try {
+    const result = await autoUpdater.checkForUpdates()
+    const found = result?.updateInfo?.version
+    if (found && found !== app.getVersion()) return { status: 'downloading', version: found }
+    return { status: 'current' }
+  } catch (err) {
+    return {
+      status: 'unavailable',
+      error: err instanceof Error ? err.message : 'Could not reach the update feed'
+    }
+  }
+}
+
 function setupAutoUpdate(): void {
   // only the installed release self-updates; a test build finding the GitHub
   // releases feed would replace itself with the production app
@@ -538,6 +564,7 @@ function registerIpc(): void {
   ipcMain.handle('update:install', () => {
     autoUpdater.quitAndInstall()
   })
+  ipcMain.handle('update:check', () => checkForUpdatesNow())
 
   ipcMain.handle('app:version', () => app.getVersion())
   ipcMain.handle('app:channel', () => channel)

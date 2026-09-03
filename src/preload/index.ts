@@ -115,7 +115,12 @@ const api = {
       ipcRenderer.on('update:ready', handler)
       return () => ipcRenderer.removeListener('update:ready', handler)
     },
-    install: (): Promise<void> => ipcRenderer.invoke('update:install')
+    install: (): Promise<void> => ipcRenderer.invoke('update:install'),
+    check: (): Promise<{
+      status: 'downloading' | 'current' | 'unavailable'
+      version?: string
+      error?: string
+    }> => ipcRenderer.invoke('update:check')
   },
   meetings: {
     list: (): Promise<MeetingListItem[]> => ipcRenderer.invoke('meetings:list'),
