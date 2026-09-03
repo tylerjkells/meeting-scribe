@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react'
 
 /** release notes shown once after an update lands (auto-updates are silent) */
 const NOTES: Record<string, string[]> = {
+  '0.25.2': [
+    'Today no longer lists your stale action items — anything from a meeting over two weeks old with nothing due. They wait in the Action items page’s Stale section, and the “All open items” link on Today says how many are there to review.'
+  ],
   '0.25.1': [
     'Hide calendar events you don’t want treated as meetings — planning blocks, lunch, focus time. Hover an event on Today and click Hide, or manage the list under Settings → Calendar (matches any event whose title contains your text). Hidden events vanish from Today, the month calendar, briefs, recaps, and the record nudge, and recordings stop taking their names.'
   ],

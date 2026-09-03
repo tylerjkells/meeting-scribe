@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ActionRollupItem } from '../../../shared/types'
-import { isOpenAction, isSnoozed, todayIso } from '../../../shared/actions'
+import { isOpenAction, isSnoozed, isStaleAction, todayIso } from '../../../shared/actions'
 import { DueEditor, formatWhen, isOverdue, OwnerEditor, useConfirm } from '../ui'
 import { ClickupPushDialog } from '../ClickupPush'
 
@@ -13,15 +13,6 @@ import { ClickupPushDialog } from '../ClickupPush'
  * date is folded into a stale section to be reviewed in bulk. Beyond "done",
  * an item can be dismissed (it was never a task) or snoozed (not now).
  */
-
-/** items from meetings older than this, with no live due date, are stale */
-const STALE_DAYS = 14
-
-function isStale(i: ActionRollupItem, today: string): boolean {
-  const ageMs = Date.now() - new Date(i.createdAt).getTime()
-  if (ageMs < STALE_DAYS * 86400000) return false
-  return !i.dueDate || i.dueDate < today
-}
 
 function shiftIso(days: number): string {
   return todayIso(new Date(Date.now() + days * 86_400_000))
@@ -144,8 +135,8 @@ export function ActionsView({ onOpen }: { onOpen: (id: string) => void }): React
   // ---- buckets -------------------------------------------------------------
 
   const open = useMemo(() => scoped.filter((i) => isOpenAction(i, today)), [scoped, today])
-  const live = useMemo(() => open.filter((i) => !isStale(i, today)), [open, today])
-  const stale = useMemo(() => open.filter((i) => isStale(i, today)).sort(byUrgency), [open, today])
+  const live = useMemo(() => open.filter((i) => !isStaleAction(i, today)), [open, today])
+  const stale = useMemo(() => open.filter((i) => isStaleAction(i, today)).sort(byUrgency), [open, today])
   const done = useMemo(() => scoped.filter((i) => i.done && !i.dismissed), [scoped])
   const dismissed = useMemo(() => scoped.filter((i) => i.dismissed), [scoped])
   const snoozed = useMemo(

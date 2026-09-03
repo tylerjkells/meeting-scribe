@@ -25,3 +25,18 @@ export function isSnoozed(item: ActionState, today: string = todayIso()): boolea
 export function isOpenAction(item: ActionState, today: string = todayIso()): boolean {
   return !item.done && !item.dismissed && !isSnoozed(item, today)
 }
+
+/** items from meetings older than this, with no live due date, are stale */
+export const STALE_DAYS = 14
+
+/**
+ * Stale: old enough that nobody is coming back for it, and nothing due.
+ * These fold into the Action items page's Stale section and stay off Today.
+ */
+export function isStaleAction(
+  item: ActionState & { createdAt: string; dueDate?: string },
+  today: string = todayIso()
+): boolean {
+  if (Date.now() - new Date(item.createdAt).getTime() < STALE_DAYS * 86400000) return false
+  return !item.dueDate || item.dueDate < today
+}
