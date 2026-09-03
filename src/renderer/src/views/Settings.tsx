@@ -331,10 +331,14 @@ export function SettingsView({
     window.scribe.usage.get().then(setUsage)
   }, [])
   const [version, setVersion] = useState('')
+  const [updateBusy, setUpdateBusy] = useState(false)
+  const [updateNote, setUpdateNote] = useState<{ ok: boolean; msg: string } | null>(null)
+  const [updateReady, setUpdateReady] = useState(false)
 
   useEffect(() => {
     window.scribe.meetings.storageStats().then(setStorage)
     window.scribe.appVersion().then(setVersion)
+    return window.scribe.update.onReady(() => setUpdateReady(true))
     window.scribe.claude.status().then(setClaude)
   }, [])
 
@@ -850,6 +854,43 @@ export function SettingsView({
               }
             />
           )}
+        </div>
+      </section>
+
+      <section className="settings-section">
+        <header className="settings-label">
+          <h2>Workday</h2>
+          <p className="hint">
+            Times the three daily briefs on Today: the morning brief when your day starts, a
+            midday check-in at noon, and an end-of-day wrap half an hour before your day ends.
+            Each replaces the one before it.
+          </p>
+        </header>
+        <div className="settings-body">
+          <div className="field-row">
+            <label className="cu-control">
+              Start
+              <input
+                type="time"
+                className="text-input"
+                value={settings.workdayStart}
+                onChange={async (e) =>
+                  onChange(await window.scribe.settings.update({ workdayStart: e.target.value }))
+                }
+              />
+            </label>
+            <label className="cu-control">
+              End
+              <input
+                type="time"
+                className="text-input"
+                value={settings.workdayEnd}
+                onChange={async (e) =>
+                  onChange(await window.scribe.settings.update({ workdayEnd: e.target.value }))
+                }
+              />
+            </label>
+          </div>
         </div>
       </section>
 
@@ -1428,6 +1469,41 @@ export function SettingsView({
             </a>
             .
           </p>
+          <div className="field-row">
+            {updateReady ? (
+              <button className="btn btn-primary" onClick={() => window.scribe.update.install()}>
+                Restart to update
+              </button>
+            ) : (
+              <button
+                className="btn"
+                disabled={updateBusy}
+                onClick={async () => {
+                  setUpdateBusy(true)
+                  setUpdateNote(null)
+                  const r = await window.scribe.update.check()
+                  setUpdateBusy(false)
+                  if (r.status === 'downloading') {
+                    setUpdateNote({
+                      ok: true,
+                      msg: `Version ${r.version} is downloading — the restart button appears here (and in the sidebar) when it's ready.`
+                    })
+                  } else if (r.status === 'current') {
+                    setUpdateNote({ ok: true, msg: 'You are on the latest version.' })
+                  } else {
+                    setUpdateNote({ ok: false, msg: r.error ?? 'Could not check for updates.' })
+                  }
+                }}
+              >
+                {updateBusy ? 'Checking…' : 'Check for updates'}
+              </button>
+            )}
+          </div>
+          {updateNote && (
+            <p className={`field-note ${updateNote.ok ? 'ok' : 'error'}`} role="status">
+              {updateNote.msg}
+            </p>
+          )}
         </div>
       </section>
       </div>

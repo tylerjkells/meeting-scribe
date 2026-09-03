@@ -13,7 +13,7 @@ import { ChevronIcon, formatDuration, formatWhen, isOverdue, MicIcon, StageBadge
 import { ClickupCompleteDialog } from '../ClickupComplete'
 import { PrepBody, PrepDialog } from '../PrepDialog'
 import { MorningBrief } from '../MorningBrief'
-import { isOpenAction } from '../../../shared/actions'
+import { isOpenAction, isStaleAction } from '../../../shared/actions'
 
 /**
  * The location field on virtual/hybrid events often carries platform
@@ -224,11 +224,17 @@ export function TodayView({
   }, [events])
 
   const todayMeetings = useMemo(() => meetings.filter((m) => isToday(m.createdAt)), [meetings])
+  // stale items (old meeting, nothing due) stay on the Action items page;
+  // Today only shows what still plausibly needs doing
   const myOpenActions = useMemo(
     () =>
       actions
-        .filter((a) => isOpenAction(a) && a.owners.includes('Me'))
+        .filter((a) => isOpenAction(a) && !isStaleAction(a) && a.owners.includes('Me'))
         .sort((a, b) => ((a.dueDate ?? '9999') < (b.dueDate ?? '9999') ? -1 : 1)),
+    [actions]
+  )
+  const myStaleCount = useMemo(
+    () => actions.filter((a) => isOpenAction(a) && isStaleAction(a) && a.owners.includes('Me')).length,
     [actions]
   )
   const timedEvents = events.filter((e) => !e.allDay)
@@ -475,9 +481,10 @@ export function TodayView({
                   </div>
                 ))}
               </div>
-              {myOpenActions.length > 6 && (
+              {(myOpenActions.length > 6 || myStaleCount > 0) && (
                 <button className="link-btn today-more" onClick={onActions}>
-                  All {myOpenActions.length} open items
+                  {myOpenActions.length > 6 ? `All ${myOpenActions.length} open items` : 'All open items'}
+                  {myStaleCount > 0 ? ` · ${myStaleCount} stale to review` : ''}
                 </button>
               )}
             </>

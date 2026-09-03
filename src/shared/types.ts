@@ -573,6 +573,9 @@ export interface AppSettings {
   mailFolder: string | null
   /** signature appended to every reply draft, as sanitized inline HTML */
   mailSignatureHtml: string
+  /** HH:MM local bounds of the workday; they time the three daily briefs */
+  workdayStart: string
+  workdayEnd: string
   /**
    * calendar events whose title contains one of these (case-insensitive) are
    * hidden everywhere: Today, the month calendar, briefs, recaps, nudges,
@@ -661,11 +664,21 @@ export interface RecapMail {
   needsReply: boolean
 }
 
+/** which of the day's briefs this is */
+export type BriefSlot = 'morning' | 'midday' | 'close'
+
 /**
- * The morning brief: yesterday, overnight, and today ahead, assembled from the
- * calendar, the mail bridge, the library, and ClickUp.
+ * One of the day's briefs, assembled from the calendar, the mail bridge, the
+ * library, and ClickUp. Morning covers yesterday, overnight, and the day
+ * ahead; midday covers what changed since the morning; close wraps the day
+ * and looks at tomorrow.
  */
 export interface DailyRecap {
+  slot: BriefSlot
+  /** e.g. "Morning brief" */
+  slotLabel: string
+  /** tomorrow's calendar, for the end-of-day brief; empty otherwise */
+  tomorrowEvents: { title: string; start: string; allDay: boolean }[]
   /** ISO date */
   date: string
   /** e.g. "Wednesday, August 19" */
