@@ -29,6 +29,8 @@ import type {
   LibraryQA,
   LinkEntry,
   MailDraftInput,
+  MailNewDraftInput,
+  MailRecipients,
   MailDraftResult,
   MailMessage,
   MailStatus,
@@ -316,6 +318,12 @@ const api = {
     /** file the draft for the outbound flow to turn into an Outlook draft */
     queueDraft: (input: MailDraftInput): Promise<{ ok: boolean; error?: string }> =>
       ipcRenderer.invoke('mail:queueDraft', input),
+    /** file a fresh message (e.g. a meeting follow-up) as an Outlook draft */
+    queueNew: (input: MailNewDraftInput): Promise<{ ok: boolean; error?: string }> =>
+      ipcRenderer.invoke('mail:queueNew', input),
+    /** resolve participant names to addresses via the people directory */
+    recipientsFor: (names: string[]): Promise<MailRecipients> =>
+      ipcRenderer.invoke('mail:recipientsFor', names),
     /** the bridge folder gained or lost files */
     onChanged: (fn: () => void): (() => void) => {
       const handler = (): void => fn()

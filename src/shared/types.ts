@@ -645,6 +645,21 @@ export interface MailDraftInput {
   body: string
 }
 
+/** a fresh message (not a reply), e.g. a meeting follow-up */
+export interface MailNewDraftInput {
+  /** recipient addresses */
+  to: string[]
+  subject: string
+  body: string
+}
+
+/** meeting participants resolved to addresses via the people directory */
+export interface MailRecipients {
+  matched: { name: string; email: string }[]
+  /** names with no email on file */
+  unmatched: string[]
+}
+
 export interface MailDraftResult {
   ok: boolean
   body?: string

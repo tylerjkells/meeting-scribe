@@ -200,9 +200,10 @@ that, EWS, is being blocked starting October 1 2026.
 
 ### The outbound half
 
-Rowan never sends mail. "Draft a reply" writes a JSON file into the bridge's
-`out` folder and stops there; a second flow turns it into a real Outlook
-draft, which the user reviews and sends themselves.
+Rowan never sends mail. "Draft a reply" (and "Send to Outlook" on a meeting's
+follow-up email) writes a JSON file into the bridge's `out` folder and stops
+there; a second flow turns it into a real Outlook draft, which the user
+reviews and sends themselves.
 
 The file looks like:
 
@@ -215,6 +216,14 @@ The file looks like:
       "body": "...",
       "queuedAt": "2026-08-19T..."
     }
+
+A fresh message (a meeting follow-up) uses `"kind": "new"`, an empty
+`messageId`, a null `conversationId`, and `to` as a semicolon-separated list
+(`"a@x.com; b@x.com"`), which Outlook's To field accepts as-is. `messageId`
+stays present so the flow's `required` list below keeps passing; the flow
+needs no changes for this kind. Recipients come from the meeting's
+participants looked up in the people directory; anyone without an email on
+file is flagged in the app rather than guessed.
 
 The flow: OneDrive *When a file is created* on `/Apps/Rowan/out` → *Get file
 content* → *Parse JSON* → the Outlook connector's draft action → *Delete

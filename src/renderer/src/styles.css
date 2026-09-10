@@ -4105,6 +4105,12 @@ dialog.confirm p {
   gap: var(--s3);
 }
 
+.email-draft-buttons {
+  display: flex;
+  gap: var(--s2);
+  flex: none;
+}
+
 /* ---------- transcript import ---------- */
 
 .import-hint {

@@ -759,6 +759,7 @@ export function MeetingView({
       {emailDraft && (
         <EmailDraft
           draft={emailDraft}
+          attendees={meeting.attendees ?? []}
           onChange={setEmailDraft}
           onClose={() => setEmailDraft(null)}
         />
@@ -1168,19 +1169,66 @@ export function MeetingView({
 /** editable recap draft the user copies into their own email */
 function EmailDraft({
   draft,
+  attendees,
   onChange,
   onClose
 }: {
   draft: { subject: string; body: string }
+  attendees: string[]
   onChange: (d: { subject: string; body: string }) => void
   onClose: () => void
 }): React.JSX.Element {
   const [copiedWhat, setCopiedWhat] = useState<'subject' | 'body' | null>(null)
+  // Outlook path: only offered when the mail bridge is set up. Recipients
+  // come from the participants list via the people directory.
+  const [mailReady, setMailReady] = useState(false)
+  const [to, setTo] = useState('')
+  const [unmatched, setUnmatched] = useState<string[]>([])
+  const [busy, setBusy] = useState(false)
+  const [queued, setQueued] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let live = true
+    ;(async () => {
+      const st = await window.scribe.mail.status()
+      if (!live || !st.connected) return
+      setMailReady(true)
+      const found = await window.scribe.mail.recipientsFor(attendees)
+      if (!live) return
+      setTo(found.matched.map((m) => m.email).join('; '))
+      setUnmatched(found.unmatched)
+    })()
+    return () => {
+      live = false
+    }
+    // resolve once per open; the picker re-opens the panel when attendees change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function copy(what: 'subject' | 'body'): Promise<void> {
     await navigator.clipboard.writeText(what === 'subject' ? draft.subject : draft.body)
     setCopiedWhat(what)
     setTimeout(() => setCopiedWhat(null), 1800)
+  }
+
+  const recipients = to
+    .split(/[;,]/)
+    .map((a) => a.trim())
+    .filter(Boolean)
+
+  async function sendToOutlook(): Promise<void> {
+    if (recipients.length === 0 || !draft.body.trim()) return
+    setBusy(true)
+    setError(null)
+    const result = await window.scribe.mail.queueNew({
+      to: recipients,
+      subject: draft.subject,
+      body: draft.body.trim()
+    })
+    setBusy(false)
+    if (result.ok) setQueued(true)
+    else setError(result.error ?? 'Could not file the draft')
   }
 
   return (
@@ -1191,6 +1239,27 @@ function EmailDraft({
           Close
         </button>
       </div>
+      {mailReady && (
+        <div>
+          <label className="field-label" htmlFor="email-draft-to">
+            To
+          </label>
+          <input
+            id="email-draft-to"
+            className="text-input"
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+            placeholder="name@example.com; another@example.com"
+            disabled={queued}
+          />
+          {unmatched.length > 0 && (
+            <p className="field-note">
+              No email on file for {unmatched.join(', ')} — add one on their People page, or type
+              it here.
+            </p>
+          )}
+        </div>
+      )}
       <div>
         <label className="field-label" htmlFor="email-draft-subject">
           Subject
@@ -1218,11 +1287,34 @@ function EmailDraft({
           onChange={(e) => onChange({ ...draft, body: e.target.value })}
         />
       </div>
+      {error && <p className="field-note error">{error}</p>}
+      {queued && (
+        <p className="field-note ok">
+          Filed. It becomes a draft in Outlook within about a minute — review and send it from
+          there.
+        </p>
+      )}
       <div className="email-draft-actions">
-        <span className="opt-desc">Edit freely, then paste into a new email.</span>
-        <button className="btn email-copy-btn" onClick={() => copy('body')}>
-          {copiedWhat === 'body' ? 'Copied ✓' : 'Copy body'}
-        </button>
+        <span className="opt-desc">
+          {mailReady
+            ? 'Edit freely, then send it to Outlook as a draft or copy it.'
+            : 'Edit freely, then paste into a new email.'}
+        </span>
+        <div className="email-draft-buttons">
+          <button className="btn email-copy-btn" onClick={() => copy('body')}>
+            {copiedWhat === 'body' ? 'Copied ✓' : 'Copy body'}
+          </button>
+          {mailReady && (
+            <button
+              className="btn btn-primary email-copy-btn"
+              onClick={sendToOutlook}
+              disabled={busy || queued || recipients.length === 0 || !draft.body.trim()}
+              title={recipients.length === 0 ? 'Add a recipient first' : undefined}
+            >
+              {busy ? 'Filing…' : queued ? 'Filed ✓' : 'Send to Outlook'}
+            </button>
+          )}
+        </div>
       </div>
     </section>
   )

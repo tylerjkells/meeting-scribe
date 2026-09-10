@@ -107,7 +107,13 @@ import {
   startMailWatch,
   stopMailWatch
 } from './mail'
-import { draftMailReply, queueMailDraft, summarizeMailMessage } from './mailReply'
+import {
+  draftMailReply,
+  queueMailDraft,
+  queueNewMailDraft,
+  recipientsFor,
+  summarizeMailMessage
+} from './mailReply'
 import { buildDailyRecap, narrateRecap, startBriefWatch, todaysBrief } from './recap'
 import {
   refreshCalendar,
@@ -169,6 +175,7 @@ import type {
   EnergySample,
   LinkEntry,
   MailDraftInput,
+  MailNewDraftInput,
   Meeting,
   PersonDetails,
   RecordingMode,
@@ -956,6 +963,8 @@ function registerIpc(): void {
     draftMailReply(messageId, instruction)
   )
   ipcMain.handle('mail:queueDraft', (_e, input: MailDraftInput) => queueMailDraft(input))
+  ipcMain.handle('mail:queueNew', (_e, input: MailNewDraftInput) => queueNewMailDraft(input))
+  ipcMain.handle('mail:recipientsFor', (_e, names: string[]) => recipientsFor(names))
   ipcMain.handle('mail:summarize', (_e, messageId: string) => summarizeMailMessage(messageId))
   ipcMain.handle('mail:triage', () => readMailTriage())
   ipcMain.handle('mail:setHandled', (_e, messageIds: string[], handled: boolean) =>

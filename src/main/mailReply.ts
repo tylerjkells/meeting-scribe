@@ -7,7 +7,13 @@ import { personProfile } from './people'
 import { detailsFor, readDirectory } from './directory'
 import { getMailSignature, getSettings } from './settings'
 import { stripDashes, VOICE_RULES } from './voice'
-import type { MailDraftInput, MailDraftResult, MailMessage } from '../shared/types'
+import type {
+  MailDraftInput,
+  MailDraftResult,
+  MailMessage,
+  MailNewDraftInput,
+  MailRecipients
+} from '../shared/types'
 
 // ---------------------------------------------------------------------------
 // Reply drafting. Rowan never sends mail: a draft is written to the bridge's
@@ -194,33 +200,38 @@ function toHtml(text: string): string {
     .replace(/\r\n|\r|\n/g, '<br>')
 }
 
+/** the payload the outbound flow parses; see docs/OUTLOOK.md */
+interface OutboundDraft {
+  kind: 'reply' | 'new'
+  messageId: string
+  conversationId: string | null
+  to: string
+  subject: string
+  body: string
+}
+
 /**
- * File a draft for the outbound flow to turn into a real Outlook draft.
- * Writing the file IS the send — the flow picks it up within a minute.
+ * Write one draft file for the outbound flow. Writing the file IS the send —
+ * the flow picks it up within a minute.
  */
-export function queueMailDraft(input: MailDraftInput): { ok: boolean; error?: string } {
+function writeOutbound(draft: OutboundDraft): { ok: boolean; error?: string } {
   try {
     const dir = mailOutDir()
     if (!dir) return { ok: false, error: 'No mail folder is set up.' }
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
 
-    const message = readMailbox().find((m) => m.id === input.messageId)
     const stamp = new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 17)
 
     // Outlook only applies a signature to what you compose yourself, so a
     // draft the flow creates arrives bare. Rowan appends its own copy.
     const signature = getMailSignature()
-    const body = signature.text ? `${input.body}\n\n${signature.text}` : input.body
+    const body = signature.text ? `${draft.body}\n\n${signature.text}` : draft.body
     const bodyHtml = signature.html
-      ? `${toHtml(input.body)}<br><br>${signature.html}`
-      : toHtml(input.body)
+      ? `${toHtml(draft.body)}<br><br>${signature.html}`
+      : toHtml(draft.body)
 
     const payload = {
-      kind: 'reply',
-      messageId: input.messageId,
-      conversationId: message?.conversationId ?? null,
-      to: message?.from ?? '',
-      subject: message ? `RE: ${message.subject}` : 'RE:',
+      ...draft,
       body,
       /** the same text as HTML, for the connector's rich-text body field */
       bodyHtml,
@@ -231,4 +242,54 @@ export function queueMailDraft(input: MailDraftInput): { ok: boolean; error?: st
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : String(err) }
   }
+}
+
+/** File a reply for the outbound flow to turn into a real Outlook draft. */
+export function queueMailDraft(input: MailDraftInput): { ok: boolean; error?: string } {
+  const message = readMailbox().find((m) => m.id === input.messageId)
+  return writeOutbound({
+    kind: 'reply',
+    messageId: input.messageId,
+    conversationId: message?.conversationId ?? null,
+    to: message?.from ?? '',
+    subject: message ? `RE: ${message.subject}` : 'RE:',
+    body: input.body
+  })
+}
+
+/**
+ * File a fresh message (a meeting follow-up, say). messageId stays present
+ * but empty because the flow's Parse JSON step lists it as required.
+ * Recipients are joined with semicolons, which Outlook's To field accepts.
+ */
+export function queueNewMailDraft(input: MailNewDraftInput): { ok: boolean; error?: string } {
+  const to = input.to.map((a) => a.trim()).filter(Boolean)
+  if (to.length === 0) return { ok: false, error: 'Add at least one recipient.' }
+  return writeOutbound({
+    kind: 'new',
+    messageId: '',
+    conversationId: null,
+    to: to.join('; '),
+    subject: input.subject.trim() || '(no subject)',
+    body: input.body
+  })
+}
+
+/** Look up meeting participants in the directory. Names not on file are reported, not guessed. */
+export function recipientsFor(names: string[]): MailRecipients {
+  const out: MailRecipients = { matched: [], unmatched: [] }
+  const seen = new Set<string>()
+  for (const raw of names) {
+    const name = raw.trim()
+    if (!name || name.toLowerCase() === 'me') continue
+    const email = detailsFor(name)?.email?.trim()
+    if (email) {
+      if (seen.has(email.toLowerCase())) continue
+      seen.add(email.toLowerCase())
+      out.matched.push({ name, email })
+    } else {
+      out.unmatched.push(name)
+    }
+  }
+  return out
 }
