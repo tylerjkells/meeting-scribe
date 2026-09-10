@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react'
 
 /** release notes shown once after an update lands (auto-updates are silent) */
 const NOTES: Record<string, string[]> = {
+  '0.27.0': [
+    'Send a meeting’s follow-up email straight to Outlook. With mail set up, the Follow-up email panel gains a To field and a Send to Outlook button. The recipients are filled from the meeting’s participants using the emails on their People pages — anyone without one on file is pointed out so you can add it — and the draft lands in Outlook within about a minute for you to review and send.'
+  ],
   '0.26.0': [
     'The morning brief became three. Set your work hours in Settings → Workday, and Today writes a morning brief when your day starts, a midday check-in at noon covering what changed — meetings held, new asks with your name on them, mail that wants an answer, what the afternoon holds — and an end-of-day wrap half an hour before you finish: where the day landed, what follows you to tomorrow, and tomorrow\u2019s first meetings. Each brief replaces the one before it; anything still relevant carries forward on its own.'
   ],
